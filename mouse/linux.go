@@ -24,21 +24,14 @@ static void GetMouseCoordinates(int *x, int *y) {
 */
 import "C"
 import (
-	"fmt"
 	"github.com/ignite-laboratories/core/std"
 )
 
-func getCoordinates() (xy std.XY[int], err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("failed to get mouse position: %v", r)
-		}
-	}()
-
+func getCoordinates() std.XY[int] {
 	var cX, cY C.int
 	C.GetMouseCoordinates(&cX, &cY)
 	return std.XY[int]{
 		X: int(cX),
 		Y: int(cY),
-	}, nil
+	}
 }

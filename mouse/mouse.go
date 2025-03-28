@@ -8,21 +8,24 @@ import (
 	"github.com/ignite-laboratories/core/when"
 )
 
-func GetCoordinates() std.XY[int] {
-	coords, err := getCoordinates()
-	if err != nil {
-		_ = fmt.Errorf("error getting mouse coordinates: %v", err)
-	}
-	return coords
+// SampleRate provides a standard frequency for sampling the mouse.
+var SampleRate = 2048.0
+
+// Coordinates provides an observational dimension that samples the mouse coordinates at the current SampleRate.
+var Coordinates = temporal.Observer(core.Impulse, when.Frequency(&SampleRate), true, SampleCoordinates)
+
+// Reaction creates a reactionary dimension that samples the target at the provided frequency.
+func Reaction(frequency *float64, onChange temporal.Change[std.XY[int]]) *temporal.Dimension[std.XY[int], any] {
+	return temporal.Reaction[std.XY[int]](core.Impulse, when.Frequency(frequency), false, SampleCoordinates, onChange)
 }
 
-var SampleRate = 1024.0
-var Coordinates = temporal.Calculator(core.Impulse, when.Frequency(&SampleRate), true, coordinateSampler)
-
-func coordinateSampler(ctx core.Context) std.XY[int] {
-	coords, err := getCoordinates()
-	if err != nil {
-		_ = fmt.Errorf("error getting mouse coordinates: %v", err)
-	}
-	return coords
+// SampleCoordinates gets the current mouse coordinates, or nil if unable to do so.
+func SampleCoordinates() *std.XY[int] {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(fmt.Errorf("failed to get mouse position: %v", r))
+		}
+	}()
+	coords := getCoordinates()
+	return &coords
 }
