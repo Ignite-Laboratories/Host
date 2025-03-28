@@ -1,6 +1,6 @@
 //go:build windows
 
-package host
+package mouse
 
 /*
 #include <windows.h>
@@ -13,9 +13,11 @@ void GetMouseCoordinates(int *x, int *y) {
 }
 */
 import "C"
-import "fmt"
+import (
+	"fmt"
+)
 
-func (m mouse) GetCoordinates() (x int, y int, err error) {
+func GetCoordinates() (xy core.Coordinate[int], err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("failed to get mouse position: %v", r)
@@ -24,5 +26,8 @@ func (m mouse) GetCoordinates() (x int, y int, err error) {
 
 	var cX, cY C.int
 	C.GetMouseCoordinates(&cX, &cY)
-	return int(cX), int(cY), nil
+	return core.Coordinate[int]{
+		X: int(cX),
+		Y: int(cY),
+	}, nil
 }

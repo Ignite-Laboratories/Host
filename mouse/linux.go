@@ -1,6 +1,6 @@
 //go:build linux
 
-package host
+package mouse
 
 /*
 #cgo LDFLAGS: -lX11
@@ -23,9 +23,12 @@ static void GetMouseCoordinates(int *x, int *y) {
 }
 */
 import "C"
-import "fmt"
+import (
+	"fmt"
+	"github.com/ignite-laboratories/core/std"
+)
 
-func (m mouse) GetCoordinates() (x int, y int, err error) {
+func getCoordinates() (xy std.XY[int], err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("failed to get mouse position: %v", r)
@@ -34,5 +37,8 @@ func (m mouse) GetCoordinates() (x int, y int, err error) {
 
 	var cX, cY C.int
 	C.GetMouseCoordinates(&cX, &cY)
-	return int(cX), int(cY), nil
+	return std.XY[int]{
+		X: int(cX),
+		Y: int(cY),
+	}, nil
 }
