@@ -15,8 +15,8 @@ var SampleRate = 2048.0
 var Coordinates = temporal.Observer(core.Impulse, when.Frequency(&SampleRate), true, SampleCoordinates)
 
 // Reaction creates a reactionary dimension that samples the target at the provided frequency.
-func Reaction(frequency *float64, onChange temporal.Change[std.XY[int]]) *temporal.Dimension[std.XY[int], any] {
-	return temporal.Reaction[std.XY[int]](core.Impulse, when.Frequency(frequency), false, SampleCoordinates, onChange)
+func Reaction(engine *core.Engine, frequency *float64, onChange temporal.Change[std.XY[int]]) *temporal.Dimension[std.XY[int], any] {
+	return temporal.Reaction[std.XY[int]](engine, when.Frequency(frequency), false, SampleCoordinates, onChange)
 }
 
 // SampleCoordinates gets the current mouse coordinates, or nil if unable to do so.
