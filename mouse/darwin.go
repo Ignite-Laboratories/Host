@@ -12,6 +12,9 @@ void GetMouseCoordinates(int *x, int *y) {
 }
 */
 import "C"
+import (
+	"github.com/ignite-laboratories/core/std"
+)
 
 func getCoordinates() std.XY[int] {
 	var cX, cY C.int

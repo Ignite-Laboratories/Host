@@ -11,10 +11,10 @@ import (
 // SampleRate provides a standard frequency for sampling the mouse.
 var SampleRate = 2048.0
 
-// Coordinates provides an observational dimension that samples the mouse coordinates at the current SampleRate.
+// Coordinates provides an observational dimension that samples the mouse coordinates at the provided frequency.
 var Coordinates = temporal.Observer(core.Impulse, when.Frequency(&SampleRate), true, SampleCoordinates)
 
-// Reaction creates a reactionary dimension that samples the target at the provided frequency.
+// Reaction creates a reactionary dimension that samples the mouse and invokes onChange at the provided frequency.
 func Reaction(engine *core.Engine, frequency *float64, onChange temporal.Change[std.XY[int]]) *temporal.Dimension[std.XY[int], any] {
 	return temporal.Reaction[std.XY[int]](engine, when.Frequency(frequency), false, SampleCoordinates, onChange)
 }
