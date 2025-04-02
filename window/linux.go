@@ -1,6 +1,6 @@
 //go:build linux
 
-package windowing
+package window
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ import (
 
 func init() {
 	var err error
-	fmt.Println("[host] - Linux - x windowing")
+	fmt.Println("[host] - Linux - x window")
 
 	// Fire up the X server connection
 	X, err = xgbutil.NewConn()
@@ -33,15 +33,19 @@ func init() {
 	}()
 }
 
-// StopPotential provides a common stopping potential for an impulse engine paired with a windowing context.
+// StopPotential provides a potential that returns true when all of the windows have been globally closed.
 func StopPotential(ctx core.Context) bool {
 	return Count == 0
 }
 
+// X represents the handle to the underlying x server connection.
 var X *xgbutil.XUtil
+
+// Count provides the number of open x windows.
 var Count int32
 
-func CreateWindow() *xwindow.Window {
+// Create creates a new x window and returns a handle to it
+func Create() *xwindow.Window {
 	atomic.AddInt32(&Count, 1)
 	win, err := xwindow.Generate(X)
 	if err != nil {

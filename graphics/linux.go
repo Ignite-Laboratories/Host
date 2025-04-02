@@ -17,7 +17,7 @@ func init() {
 	fmt.Println("[host] - Linux - egl graphics bridge")
 }
 
-func Setup(window *xwindow.Window, loop func(display egl.Display, surface egl.Surface)) {
+func SetupEGL(window *xwindow.Window, renderer Renderable) {
 	go func() {
 		runtime.LockOSThread()
 
@@ -51,7 +51,9 @@ func Setup(window *xwindow.Window, loop func(display egl.Display, surface egl.Su
 
 		// Start rendering
 		for core.Alive {
-			loop(display, surface)
+			renderer.Render()
+			// Swap the buffers to display the rendered frame
+			egl.SwapBuffers(display, surface)
 		}
 	}()
 }

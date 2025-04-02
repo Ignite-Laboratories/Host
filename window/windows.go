@@ -1,6 +1,6 @@
 //go:build windows
 
-package windowing
+package window
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ var count int32
 
 func init() {
 	// Initialize the system and launch the message loop in a new goroutine
-	fmt.Println("[host] - Windows - WinAPI windowing")
+	fmt.Println("[host] - Windows - WinAPI window")
 
 	// Start a goroutine for the main message loop to handle messages for all windows
 	go func() {
@@ -32,7 +32,7 @@ func init() {
 	}()
 }
 
-// StopPotential provides a common stopping potential for core impulse engines paired with the windowing system
+// StopPotential provides a common stopping potential for core impulse engines paired with the window system
 func StopPotential(ctx core.Context) bool {
 	return count == 0
 }
@@ -64,7 +64,7 @@ func CreateWindow() win.HWND {
 	hwnd := win.CreateWindowEx(
 		0,                                      // Extended style
 		className,                              // Window class name
-		syscall.StringToUTF16Ptr("My Window"),  // Window title
+		syscall.StringToUTF16Ptr("My Handle"),  // Window title
 		win.WS_OVERLAPPEDWINDOW|win.WS_VISIBLE, // Style: Overlapped and visible
 		win.CW_USEDEFAULT, win.CW_USEDEFAULT, 200, 200,
 		0, 0, // Parent and menu
