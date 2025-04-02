@@ -16,6 +16,10 @@ import (
 	"github.com/ignite-laboratories/core/std"
 )
 
+func init() {
+	fmt.Println("[host] - Darwin - mouse")
+}
+
 func getCoordinates() std.XY[int] {
 	var cX, cY C.int
 	C.GetMouseCoordinates(&cX, &cY)

@@ -8,6 +8,10 @@ import (
 	"github.com/ignite-laboratories/core/when"
 )
 
+func init() {
+	fmt.Println("[host] - mouse")
+}
+
 // SampleRate provides a standard frequency for sampling the mouse.
 var SampleRate = 2048.0
 

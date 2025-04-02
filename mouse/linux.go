@@ -24,8 +24,13 @@ static void GetMouseCoordinates(int *x, int *y) {
 */
 import "C"
 import (
+	"fmt"
 	"github.com/ignite-laboratories/core/std"
 )
+
+func init() {
+	fmt.Println("[host] - Linux - mouse")
+}
 
 func getCoordinates() std.XY[int] {
 	var cX, cY C.int
