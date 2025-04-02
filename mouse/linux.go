@@ -3,24 +3,33 @@
 package mouse
 
 /*
-#cgo LDFLAGS: -lX11
-#include <X11/Xlib.h>
+   #cgo LDFLAGS: -lX11
+   #include <X11/Xlib.h>
 
-static void GetMouseCoordinates(int *x, int *y) {
-    Display *display = XOpenDisplay(NULL);
-    if (display == NULL) return;
+   static void GetMouseCoordinates(int *x, int *y) {
+       // Open a connection to the X window server
+       Display *display = XOpenDisplay(NULL);
+       if (display == NULL) return;
 
-    Window root, child;
-    int root_x, root_y;
-    int win_x, win_y;
-    unsigned int mask;
+       // Get the root window of the default screen
+       Window root_window = RootWindow(display, DefaultScreen(display));
 
-    XQueryPointer(display, DefaultRootWindow(display), &root, &child,
-                  &root_x, &root_y, &win_x, &win_y, &mask);
-    *x = root_x;
-    *y = root_y;
-    XCloseDisplay(display);
-}
+       // Setup some output variables
+       Window root, child;
+       int root_x, root_y;
+       int win_x, win_y;
+       unsigned int mask;
+
+       // Query the mouse position relative to the root window found above
+       XQueryPointer(display, root_window, &root, &child, &root_x, &root_y, &win_x, &win_y, &mask);
+
+       // Assign values to our input parameters
+       *x = root_x;
+       *y = root_y;
+
+        // Be a good samaritan and close the connection to the server
+       XCloseDisplay(display);
+   }
 */
 import "C"
 import (
