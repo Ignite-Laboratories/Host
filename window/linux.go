@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
-	"github.com/ignite-laboratories/host"
 	"github.com/ignite-laboratories/host/x11"
 	"log"
 	"runtime"
@@ -16,16 +15,24 @@ func init() {
 	fmt.Println("[host] - Linux - sparking X window management")
 }
 
-// handles maps between entity identifiers and created window handles.
-var handles = make(map[uintptr]uint64)
+type Handle struct {
+	core.Entity
+	Display *x11.Display
+	Window  *x11.Window
+}
 
-func Create(size std.XY[int]) uint64 {
+func Create(size std.XY[int]) Handle {
 	// Ensures all OpenGL/Window calls remain on the same OS thread
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
+	display, err := x11.OpenDisplay()
+	if err != nil {
+		log.Fatalf("Failed to initialize X11: %s\n", err)
+	}
+
 	// Create the window
-	window, err := host.X.CreateWindow(0, 0, size.X, size.Y)
+	window, err := x11.CreateWindow(display, 0, 0, size.X, size.Y)
 	if err != nil {
 		log.Fatalf("Failed to create window: %s\n", err)
 	}
@@ -34,34 +41,31 @@ func Create(size std.XY[int]) uint64 {
 	}
 
 	// Map the new window to an entity ID
-	mutex.Lock()
-	entityID := core.NextID()
-	Handles[entityID] = uintptr(window.ID)
-	handles[uintptr(window.ID)] = entityID
-	Count++
-	mutex.Unlock()
+	handle := Handle{Display: display, Window: window}
+	handle.ID = core.NextID()
+	Handles[handle.ID] = handle
 
-	// Set input events and enable the `WM_DELETE_WINDOW` protocol.
-	host.X.SelectInput(window, x11.ExposureMask|x11.KeyPressMask|x11.StructureNotifyMask) // Use event constants
-	err = host.X.SetWindowProtocols(window)
+	// Enable detection of a 'close' event
+	x11.SelectInput(display, window, x11.StructureNotifyMask)
+	err = x11.SetWindowProtocols(display, window)
 	if err != nil {
 		log.Fatalf("Failed to set WM_DELETE_WINDOW protocol: %s\n", err)
 	}
 
 	// Show the window (map it to the screen)
-	host.X.ShowWindow(window)
+	x11.ShowWindow(display, window)
 
 	// Launch a separate goroutine to handle incoming events.
-	go handleEvents()
+	go handleEvents(handle)
 
-	return entityID
+	return handle
 }
 
 // handleEvents processes incoming X11 events, such as window closing.
-func handleEvents() {
+func handleEvents(handle Handle) {
 	for core.Alive {
 		// Wait for the next event and retrieve it
-		e, err := host.X.WaitForEvent()
+		e, err := x11.WaitForEvent(handle.Display)
 		if err != nil {
 			log.Printf("Failed to wait for event: %s\n", err)
 			continue
@@ -70,27 +74,20 @@ func handleEvents() {
 		switch e.Type {
 		case x11.ClientMessage:
 			// Retrieve the window and message data
-			window := host.X.GetEventWindow(e)
-			data := host.X.GetClientMessageData(e)
+			window := x11.GetEventWindow(e)
+			data, _ := x11.GetClientMessageData(e)
 
 			// Check if the event is a `WM_DELETE_WINDOW` request
-			wmDeleteAtom := host.X.Atom(x11.WMDeleteWindow) // Use event.WMDeleteWindow constant
+			wmDeleteAtom := x11.GetAtom(handle.Display, x11.WMDeleteWindow)
 			if x11.Atom(data[0]) == wmDeleteAtom {
 				if core.Verbose {
 					fmt.Printf("[x11] Window closed: ID = %d\n", window.ID)
 				}
 
 				// Destroy the window
-				host.X.DestroyWindow(window)
-				host.X.Flush()
-
-				// Clean up the internal resources
-				mutex.Lock()
-				entityID := handles[uintptr(window.ID)]
-				delete(handles, uintptr(window.ID))
-				delete(Handles, entityID)
-				Count--
-				mutex.Unlock()
+				x11.DestroyWindow(handle.Display, window)
+				x11.Flush(handle.Display)
+				delete(Handles, handle.ID)
 			}
 		}
 	}

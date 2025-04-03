@@ -19,15 +19,13 @@ func init() {
 
 // SparkRenderableWindow creates a new GL renderable window using EGL.
 func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWindow {
-	id := window.Create(size)
-	go sparkEGLBridge(window.Handles[id], renderer)
-
-	v := &RenderableWindow{}
-	v.HandleID = id
-	return v
+	w := &RenderableWindow{}
+	w.Handle = window.Create(size)
+	go sparkEGLBridge(w.Handle, renderer)
+	return w
 }
 
-func sparkEGLBridge(windowId uintptr, renderer Renderable) {
+func sparkEGLBridge(handle window.Handle, renderer Renderable) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
@@ -60,7 +58,7 @@ func sparkEGLBridge(windowId uintptr, renderer Renderable) {
 	}
 
 	// Create EGL surface for the X11 window
-	surface := egl.CreateWindowSurface(display, config, egl.NativeWindowType(uintptr(windowId)), nil)
+	surface := egl.CreateWindowSurface(display, config, egl.NativeWindowType(uintptr(handle.Window.ID)), nil)
 	if surface == egl.NO_SURFACE {
 		log.Fatalf("Failed to create EGL surface: %v", egl.GetError())
 	}
