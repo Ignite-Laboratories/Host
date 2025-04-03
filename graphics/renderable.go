@@ -13,5 +13,5 @@ type Renderable interface {
 type RenderableWindow struct {
 	core.Entity
 	Renderable
-	handle any
+	HandleID uint64
 }

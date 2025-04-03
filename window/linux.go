@@ -5,53 +5,93 @@ package window
 import (
 	"fmt"
 	"github.com/ignite-laboratories/core"
-	"github.com/jezek/xgb/xproto"
-	"github.com/jezek/xgbutil"
-	"github.com/jezek/xgbutil/xevent"
-	"github.com/jezek/xgbutil/xwindow"
-	"sync/atomic"
+	"github.com/ignite-laboratories/core/std"
+	"github.com/ignite-laboratories/host"
+	"github.com/ignite-laboratories/host/x11"
+	"log"
+	"runtime"
 )
 
 func init() {
-	var err error
 	fmt.Println("[host] - Linux - sparking X window management")
-
-	// Fire up the X server connection
-	X, err = xgbutil.NewConn()
-	if err != nil {
-		panic(err)
-	}
-
-	// Spark its "main thread"
-	go xevent.Main(X)
-
-	// Set up a thread to clean it up when JanOS "shuts down"
-	go func() {
-		core.WhileAlive()
-		xevent.Quit(X)
-	}()
 }
 
-// X represents a handle to the underlying x server connection.
-var X *xgbutil.XUtil
+// handles maps between entity identifiers and created window handles.
+var handles = make(map[uintptr]uint64)
 
-// Create sparks a new x window and returns a handle to it
-func Create() *xwindow.Window {
-	atomic.AddInt32(&Count, 1)
-	handle, err := xwindow.Generate(X)
+func Create(size std.XY[int]) uint64 {
+	// Ensures all OpenGL/Window calls remain on the same OS thread
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	// Create the window
+	window, err := host.X.CreateWindow(0, 0, size.X, size.Y)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to create window: %s\n", err)
+	}
+	if core.Verbose {
+		fmt.Printf("[x11] Window created: ID = %d\n", window.ID)
 	}
 
-	handle.Create(X.RootWin(), 0, 0, 200, 200, xproto.CwEventMask, xproto.EventMaskNoEvent)
+	// Map the new window to an entity ID
+	mutex.Lock()
+	entityID := core.NextID()
+	Handles[entityID] = uintptr(window.ID)
+	handles[uintptr(window.ID)] = entityID
+	Count++
+	mutex.Unlock()
 
-	handle.WMGracefulClose(
-		func(w *xwindow.Window) {
-			xevent.Detach(w.X, w.Id)
-			w.Destroy()
-			atomic.AddInt32(&Count, -1)
-		})
+	// Set input events and enable the `WM_DELETE_WINDOW` protocol.
+	host.X.SelectInput(window, x11.ExposureMask|x11.KeyPressMask|x11.StructureNotifyMask) // Use event constants
+	err = host.X.SetWindowProtocols(window)
+	if err != nil {
+		log.Fatalf("Failed to set WM_DELETE_WINDOW protocol: %s\n", err)
+	}
 
-	handle.Map()
-	return handle
+	// Show the window (map it to the screen)
+	host.X.ShowWindow(window)
+
+	// Launch a separate goroutine to handle incoming events.
+	go handleEvents()
+
+	return entityID
+}
+
+// handleEvents processes incoming X11 events, such as window closing.
+func handleEvents() {
+	for core.Alive {
+		// Wait for the next event and retrieve it
+		e, err := host.X.WaitForEvent()
+		if err != nil {
+			log.Printf("Failed to wait for event: %s\n", err)
+			continue
+		}
+
+		switch e.Type {
+		case x11.ClientMessage:
+			// Retrieve the window and message data
+			window := host.X.GetEventWindow(e)
+			data := host.X.GetClientMessageData(e)
+
+			// Check if the event is a `WM_DELETE_WINDOW` request
+			wmDeleteAtom := host.X.Atom(x11.WMDeleteWindow) // Use event.WMDeleteWindow constant
+			if x11.Atom(data[0]) == wmDeleteAtom {
+				if core.Verbose {
+					fmt.Printf("[x11] Window closed: ID = %d\n", window.ID)
+				}
+
+				// Destroy the window
+				host.X.DestroyWindow(window)
+				host.X.Flush()
+
+				// Clean up the internal resources
+				mutex.Lock()
+				entityID := handles[uintptr(window.ID)]
+				delete(handles, uintptr(window.ID))
+				delete(Handles, entityID)
+				Count--
+				mutex.Unlock()
+			}
+		}
+	}
 }

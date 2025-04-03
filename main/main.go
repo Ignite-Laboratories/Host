@@ -27,7 +27,7 @@ func (w *SolidColorWindow) Render() {
 
 func main() {
 	for i := 0; i < 7; i++ {
-		graphics.SparkRenderableWindow(NewSolidColorWindow(std.RandomRGB()))
+		graphics.SparkRenderableWindow(std.XY[int]{X: 640, Y: 480}, NewSolidColorWindow(std.RandomRGB()))
 	}
 	core.Impulse.StopWhen(window.StopPotential)
 	core.Impulse.Spark()

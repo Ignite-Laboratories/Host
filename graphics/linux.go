@@ -6,28 +6,28 @@ import (
 	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/ignite-laboratories/core"
+	"github.com/ignite-laboratories/core/std"
 	"github.com/ignite-laboratories/host/window"
-	"github.com/jezek/xgbutil/xwindow"
 	"github.com/remogatto/egl"
 	"log"
 	"runtime"
 )
 
 func init() {
-	fmt.Println("[host] - Linux - EGL graphics bridge")
+	fmt.Println("[host] - Linux - sparking EGL graphics bridge")
 }
 
 // SparkRenderableWindow creates a new GL renderable window using EGL.
-func SparkRenderableWindow(renderer Renderable) *RenderableWindow {
-	handle := window.Create()
-	go sparkEGLBridge(handle, renderer)
+func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWindow {
+	id := window.Create(size)
+	go sparkEGLBridge(window.Handles[id], renderer)
 
 	v := &RenderableWindow{}
-	v.handle = handle
+	v.HandleID = id
 	return v
 }
 
-func sparkEGLBridge(window *xwindow.Window, renderer Renderable) {
+func sparkEGLBridge(windowId uintptr, renderer Renderable) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
@@ -60,7 +60,7 @@ func sparkEGLBridge(window *xwindow.Window, renderer Renderable) {
 	}
 
 	// Create EGL surface for the X11 window
-	surface := egl.CreateWindowSurface(display, config, egl.NativeWindowType(uintptr(window.Id)), nil)
+	surface := egl.CreateWindowSurface(display, config, egl.NativeWindowType(uintptr(windowId)), nil)
 	if surface == egl.NO_SURFACE {
 		log.Fatalf("Failed to create EGL surface: %v", egl.GetError())
 	}
