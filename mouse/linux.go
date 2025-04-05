@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
+	"github.com/ignite-laboratories/host/window"
 	"github.com/ignite-laboratories/host/x11"
 	"log"
 )
@@ -42,5 +43,25 @@ func Sample() *std.MouseState {
 	if err != nil {
 		fmt.Printf("failed to get mouse position: %v", err)
 	}
-	return &data
+
+	state := x11.PointerQueryToState(data, true)
+	return &state
+}
+
+// SampleRelative gets the current mouse coordinates relative to a window, or nil if unable to do so.
+func SampleRelative(window window.Handle) *std.MouseState {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("failed to get mouse position: %v\n", r)
+		}
+	}()
+
+	rootWin, _ := x11.GetRootWindow(x)
+	data, err := x11.QueryPointer(x, rootWin)
+	if err != nil {
+		fmt.Printf("failed to get mouse position: %v", err)
+	}
+
+	state := x11.PointerQueryToState(data, false)
+	return &state
 }

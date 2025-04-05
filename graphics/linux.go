@@ -36,8 +36,8 @@ func sparkEGLBridge(handle window.Handle, renderer Renderable) {
 	defer runtime.UnlockOSThread()
 
 	// Initialize EGL
-	display := C.eglGetDisplay(C.EGL_DEFAULT_DISPLAY)
-	if display == nil {
+	display := C.eglGetDisplay(C.EGLNativeDisplayType(C.EGL_DEFAULT_DISPLAY))
+	if display == C.EGLDisplay(C.EGL_NO_DISPLAY) {
 		log.Fatalf("Failed to get EGL display: %v", getEGLError())
 	}
 	if C.eglInitialize(display, nil, nil) == C.EGL_FALSE {

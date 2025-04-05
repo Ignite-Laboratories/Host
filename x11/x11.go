@@ -75,7 +75,7 @@ type PointerQuery struct {
 }
 
 // QueryPointer retrieves the pointer's current position and its relationship to the specified window.
-func QueryPointer(display *Display, window Window) (std.MouseState, error) {
+func QueryPointer(display *Display, window Window) (PointerQuery, error) {
 	// Prepare C variables for receiving data
 	var rootReturn, childReturn C.Window
 	var rootXReturn, rootYReturn C.int
@@ -97,7 +97,7 @@ func QueryPointer(display *Display, window Window) (std.MouseState, error) {
 
 	// If XQueryPointer returns 0, it failed
 	if success == 0 {
-		return std.MouseState{}, errors.New("XQueryPointer failed to query pointer position")
+		return PointerQuery{}, errors.New("XQueryPointer failed to query pointer position")
 	}
 
 	query := PointerQuery{
@@ -110,15 +110,24 @@ func QueryPointer(display *Display, window Window) (std.MouseState, error) {
 		Mask:   uint(maskReturn),
 	}
 
-	state := std.MouseState{
-		GlobalPosition: std.XY[int]{
+	// Convert the retrieved values and return them
+	return query, nil
+}
+
+// PointerQueryToState converts the provided query to a std.MouseState.
+//
+// root indicates if the state should grab the global coordinates or windows coordinate.
+func PointerQueryToState(query PointerQuery, root bool) (state std.MouseState) {
+	if root {
+		state.Position = std.XY[int]{
 			X: query.RootX,
 			Y: query.RootY,
-		},
-		WindowPosition: std.XY[int]{
+		}
+	} else {
+		state.Position = std.XY[int]{
 			X: query.WinX,
 			Y: query.WinY,
-		},
+		}
 	}
 
 	if query.Mask&Button1Mask != 0 {
@@ -131,8 +140,7 @@ func QueryPointer(display *Display, window Window) (std.MouseState, error) {
 		state.Buttons.Right = true
 	}
 
-	// Convert the retrieved values and return them
-	return state, nil
+	return state
 }
 
 //

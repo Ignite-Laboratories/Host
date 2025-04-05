@@ -24,10 +24,10 @@ var highestWidth = 0
 
 func CalcCoords(ctx core.Context) *std.MouseState {
 	coords := mouse.Sample()
-	if coords.GlobalPosition.X < highestWidth/2 {
+	if coords.Position.X < highestWidth/2 {
 		fmt.Println(*coords)
-	} else if coords.GlobalPosition.X > highestWidth {
-		highestWidth = coords.GlobalPosition.X
+	} else if coords.Position.X > highestWidth {
+		highestWidth = coords.Position.X
 	}
 	return coords
 }
