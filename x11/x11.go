@@ -11,7 +11,6 @@ package x11
 import "C"
 import (
 	"errors"
-	"fmt"
 	"github.com/ignite-laboratories/core/std"
 	"unsafe"
 )
@@ -55,7 +54,6 @@ func OpenDisplay() (*Display, error) {
 func CloseDisplay(display *Display) {
 	if display.ptr != nil {
 		C.XCloseDisplay(display.ptr)
-		fmt.Println("[x11] - Closed X11 display connection")
 		display.ptr = nil
 	}
 }

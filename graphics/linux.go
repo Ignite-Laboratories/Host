@@ -20,30 +20,14 @@ import (
 )
 
 func init() {
-	fmt.Println("[host] - Linux - sparking native EGL graphics bridge")
-}
+	fmt.Println("[host] - Linux - sparking EGL bridge")
 
-// SparkRenderableWindow creates a new GL renderable window using EGL.
-func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWindow {
-	w := &RenderableWindow{}
-	w.Handle = window.Create(size)
-	go sparkEGLBridge(w.Handle, renderer)
-	return w
-}
-
-func sparkEGLBridge(handle window.Handle, renderer Renderable) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	// Initialize EGL
-	display := C.eglGetDisplay(C.EGLNativeDisplayType(C.EGL_DEFAULT_DISPLAY))
 	if display == C.EGLDisplay(C.EGL_NO_DISPLAY) {
 		log.Fatalf("Failed to get EGL display: %v", getEGLError())
 	}
 	if C.eglInitialize(display, nil, nil) == C.EGL_FALSE {
 		log.Fatalf("Failed to initialize EGL: %v", getEGLError())
 	}
-	defer C.eglTerminate(display)
 
 	// Choose an EGL configuration
 	attribs := []C.EGLint{
@@ -56,11 +40,32 @@ func sparkEGLBridge(handle window.Handle, renderer Renderable) {
 		C.EGL_RENDERABLE_TYPE, C.EGL_OPENGL_BIT,
 		C.EGL_NONE,
 	}
-	var config C.EGLConfig
 	var numConfigs C.EGLint
 	if C.eglChooseConfig(display, &attribs[0], &config, 1, &numConfigs) == C.EGL_FALSE || numConfigs == 0 {
 		log.Fatalf("Failed to choose EGL configuration: %v", getEGLError())
 	}
+
+	go func() {
+		core.WhileAlive()
+		C.eglTerminate(display)
+		fmt.Println("[host] - Linux - closed EGL bridge")
+	}()
+}
+
+// SparkRenderableWindow creates a new GL renderable window using EGL.
+func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWindow {
+	w := &RenderableWindow{}
+	w.Handle = window.Create(size)
+	go sparkEGLBridge(w.Handle, renderer)
+	return w
+}
+
+var config C.EGLConfig
+var display = C.eglGetDisplay(C.EGLNativeDisplayType(C.EGL_DEFAULT_DISPLAY))
+
+func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
 
 	// Create an EGL surface for the X11 window
 	surface := C.eglCreateWindowSurface(display, config, C.EGLNativeWindowType(uintptr(handle.Window.ID)), nil)
@@ -81,13 +86,15 @@ func sparkEGLBridge(handle window.Handle, renderer Renderable) {
 		log.Fatalf("Failed to make EGL context current: %v", getEGLError())
 	}
 
+	renderer.Initialize()
+
 	// Initialize OpenGL
 	if err := gl.Init(); err != nil {
 		log.Fatalf("Failed to initialize OpenGL: %v", err)
 	}
 
-	// Start rendering
-	for core.Alive {
+	// Start a rendering loop
+	for !handle.Destroyed && core.Alive {
 		renderer.Render()
 
 		// Swap the buffers to display the rendered frame

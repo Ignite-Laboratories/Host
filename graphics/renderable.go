@@ -7,6 +7,7 @@ import (
 
 // Renderable represents a type that has a 'Render' method.
 type Renderable interface {
+	Initialize()
 	Render()
 }
 
@@ -14,5 +15,5 @@ type Renderable interface {
 type RenderableWindow struct {
 	core.Entity
 	Renderable
-	window.Handle
+	*window.Handle
 }

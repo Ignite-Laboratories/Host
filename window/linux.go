@@ -11,17 +11,14 @@ import (
 	"runtime"
 )
 
-func init() {
-	fmt.Println("[host] - Linux - sparking X window management")
-}
-
 type Handle struct {
 	core.Entity
-	Display *x11.Display
-	Window  *x11.Window
+	Display   *x11.Display
+	Window    *x11.Window
+	Destroyed bool
 }
 
-func Create(size std.XY[int]) Handle {
+func Create(size std.XY[int]) *Handle {
 	// Ensures all OpenGL/Window calls remain on the same OS thread
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -41,9 +38,9 @@ func Create(size std.XY[int]) Handle {
 	}
 
 	// Map the new window to an entity ID
-	handle := Handle{Display: display, Window: window}
+	handle := &Handle{Display: display, Window: window}
 	handle.ID = core.NextID()
-	Handles[handle.ID] = handle
+	Handles[handle.ID] = *handle
 
 	// Enable detection of a 'close' event
 	x11.SelectInput(display, window, x11.StructureNotifyMask)
@@ -62,8 +59,10 @@ func Create(size std.XY[int]) Handle {
 }
 
 // handleEvents processes incoming X11 events, such as window closing.
-func handleEvents(handle Handle) {
-	for core.Alive {
+func handleEvents(handle *Handle) {
+	defer x11.CloseDisplay(handle.Display)
+
+	for !handle.Destroyed && core.Alive {
 		// Wait for the next event and retrieve it
 		e, err := x11.WaitForEvent(handle.Display)
 		if err != nil {
@@ -88,6 +87,7 @@ func handleEvents(handle Handle) {
 				x11.DestroyWindow(handle.Display, window)
 				x11.Flush(handle.Display)
 				delete(Handles, handle.ID)
+				handle.Destroyed = true
 			}
 		}
 	}

@@ -13,7 +13,7 @@ import (
 )
 
 func init() {
-	fmt.Println("[host] - Linux - sparking X mouse observance")
+	fmt.Println("[host] - Linux - sparking X mouse access")
 	var err error
 	x, err = x11.OpenDisplay()
 	if err != nil {
@@ -23,7 +23,7 @@ func init() {
 	go func() {
 		core.WhileAlive()
 		x11.CloseDisplay(x)
-		fmt.Println("[host] - Linux - closed X mouse observance")
+		fmt.Println("[host] - Linux - closed X mouse access")
 	}()
 }
 
