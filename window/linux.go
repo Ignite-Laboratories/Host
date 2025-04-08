@@ -18,6 +18,10 @@ type Handle struct {
 	Destroyed bool
 }
 
+func SetTitle(handle Handle, title string) {
+	x11.StoreName(handle.Display, handle.Window, title)
+}
+
 func Create(size std.XY[int]) *Handle {
 	// Ensures all OpenGL/Window calls remain on the same OS thread
 	runtime.LockOSThread()

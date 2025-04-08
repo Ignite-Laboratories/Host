@@ -208,6 +208,10 @@ func SetWindowProtocols(display *Display, win *Window) error {
 	return nil
 }
 
+func StoreName(display *Display, win *Window, name string) {
+	C.XStoreName(display.ptr, win.ID, C.CString(name))
+}
+
 //
 // --- Event Handling ---
 //

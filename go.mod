@@ -6,6 +6,7 @@ require (
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71
 	github.com/ignite-laboratories/core v0.2.6
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
+	github.com/remogatto/egl v0.0.0-20140203134355-fea5ba3496ba
 	gonum.org/v1/gonum v0.16.0
 )
 
