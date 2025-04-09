@@ -2,6 +2,7 @@
 
 package graphics
 
+import "C"
 import (
 	"fmt"
 	"log"
@@ -95,9 +96,11 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 	//	egl.CONTEXT_OPENGL_PROFILE_MASK, egl.CONTEXT_OPENGL_CORE_PROFILE_BIT,
 	//	int32(egl.NONE), // Terminator
 	//}
+
 	contextAttributes := []int32{
-		egl.CONTEXT_CLIENT_VERSION, 2, // Request OpenGL ES 2.0
-		egl.NONE, // Terminate the attributes list
+		egl.CONTEXT_MAJOR_VERSION, 3,
+		egl.CONTEXT_MINOR_VERSION, 1,
+		int32(egl.NONE), // Terminator
 	}
 
 	// Create an EGL context
