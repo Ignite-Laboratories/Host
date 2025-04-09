@@ -5,11 +5,11 @@ package graphics
 import "C"
 import (
 	"fmt"
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"log"
 	"runtime"
 	"strings"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
 	"github.com/ignite-laboratories/host/egl"
@@ -39,7 +39,7 @@ func init() {
 		egl.BLUE_SIZE, 8,
 		egl.ALPHA_SIZE, 8,
 		egl.DEPTH_SIZE, 8,
-		egl.RENDERABLE_TYPE, egl.OPENGL_BIT,
+		egl.RENDERABLE_TYPE, egl.OPENGL_ES2_BIT,
 		egl.NONE,
 	}
 	configs := make([]egl.Config, 1)
@@ -91,16 +91,10 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 	defer egl.DestroySurface(display, surface)
 
 	// Set context attributes for OpenGL 3.3 core
-	//contextAttributes := []int32{
-	//	egl.CONTEXT_MAJOR_VERSION, 3,
-	//	egl.CONTEXT_MINOR_VERSION, 3,
-	//	egl.CONTEXT_OPENGL_PROFILE_MASK, egl.CONTEXT_OPENGL_CORE_PROFILE_BIT,
-	//	int32(egl.NONE), // Terminator
-	//}
-
 	contextAttributes := []int32{
 		egl.CONTEXT_MAJOR_VERSION, 3,
 		egl.CONTEXT_MINOR_VERSION, 1,
+		//egl.CONTEXT_OPENGL_PROFILE_MASK, egl.CONTEXT_OPENGL_CORE_PROFILE_BIT,
 		int32(egl.NONE), // Terminator
 	}
 
@@ -121,13 +115,13 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 		log.Printf("Failed to set swap interval (non-fatal error): %v", egl.GetEGLError())
 	}
 
-	// Initialize the rendering context
-	renderer.Initialize()
-
 	// Initialize GL using Go-GL
 	if err := gl.Init(); err != nil {
 		log.Fatalf("Failed to initialize OpenGL: %v", err)
 	}
+
+	// Initialize the rendering context
+	renderer.Initialize()
 
 	ver := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println(ver)
@@ -141,7 +135,7 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 			fmt.Println(extension)
 		}
 	}
-	
+
 	// Start the rendering loop
 	for !handle.Destroyed && core.Alive {
 		renderer.Render()
