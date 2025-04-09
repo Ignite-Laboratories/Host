@@ -23,7 +23,7 @@ type Atom = C.Atom
 
 // Display represents a connection to an X11 server.
 type Display struct {
-	ptr *C.Display
+	Ptr *C.Display
 }
 
 // Window represents a single X11-managed window.
@@ -47,14 +47,14 @@ func OpenDisplay() (*Display, error) {
 	if ptr == nil {
 		return nil, errors.New("[x11] - Failed to open X11 display")
 	}
-	return &Display{ptr: ptr}, nil
+	return &Display{Ptr: ptr}, nil
 }
 
 // CloseDisplay closes the connection to the X11 server.
 func CloseDisplay(display *Display) {
-	if display.ptr != nil {
-		C.XCloseDisplay(display.ptr)
-		display.ptr = nil
+	if display.Ptr != nil {
+		C.XCloseDisplay(display.Ptr)
+		display.Ptr = nil
 	}
 }
 
@@ -82,7 +82,7 @@ func QueryPointer(display *Display, window Window) (PointerQuery, error) {
 
 	// Call XQueryPointer
 	success := C.XQueryPointer(
-		display.ptr,  // Display pointer
+		display.Ptr,  // Display pointer
 		window.ID,    // Window ID to query
 		&rootReturn,  // Pointer to receive parent (root) window
 		&childReturn, // Pointer to receive child window
@@ -147,13 +147,13 @@ func PointerQueryToState(query PointerQuery, root bool) (state std.MouseState) {
 
 // DefaultScreen retrieves the default screen for the display.
 func DefaultScreen(display *Display) int {
-	return int(C.XDefaultScreen(display.ptr))
+	return int(C.XDefaultScreen(display.Ptr))
 }
 
 // RootWindow retrieves the root window for the default screen.
 func RootWindow(display *Display) Window {
-	screen := C.XDefaultScreen(display.ptr)
-	root := C.XRootWindow(display.ptr, C.int(screen))
+	screen := C.XDefaultScreen(display.Ptr)
+	root := C.XRootWindow(display.Ptr, C.int(screen))
 	return Window{ID: root}
 }
 
@@ -163,18 +163,18 @@ func RootWindow(display *Display) Window {
 
 // CreateWindow creates a basic X11 window.
 func CreateWindow(display *Display, x, y, width, height int) (*Window, error) {
-	screen := C.XDefaultScreen(display.ptr)
-	root := C.XRootWindow(display.ptr, C.int(screen))
+	screen := C.XDefaultScreen(display.Ptr)
+	root := C.XRootWindow(display.Ptr, C.int(screen))
 
 	// Create the window
 	window := C.XCreateSimpleWindow(
-		display.ptr,
+		display.Ptr,
 		root,
 		C.int(x), C.int(y),
 		C.uint(width), C.uint(height),
 		C.uint(1), // border width
-		C.XBlackPixel(display.ptr, C.int(screen)),
-		C.XWhitePixel(display.ptr, C.int(screen)),
+		C.XBlackPixel(display.Ptr, C.int(screen)),
+		C.XWhitePixel(display.Ptr, C.int(screen)),
 	)
 
 	if window == 0 {
@@ -186,12 +186,12 @@ func CreateWindow(display *Display, x, y, width, height int) (*Window, error) {
 
 // DestroyWindow destroys a created window.
 func DestroyWindow(display *Display, win *Window) {
-	C.XDestroyWindow(display.ptr, win.ID)
+	C.XDestroyWindow(display.Ptr, win.ID)
 }
 
 // ShowWindow maps (shows) the window on the screen.
 func ShowWindow(display *Display, win *Window) {
-	C.XMapWindow(display.ptr, win.ID)
+	C.XMapWindow(display.Ptr, win.ID)
 }
 
 // SetWindowProtocols sets standard window close behavior (WM_DELETE_WINDOW).
@@ -201,7 +201,7 @@ func SetWindowProtocols(display *Display, win *Window) error {
 		return errors.New("[x11] - Failed to retrieve WM_DELETE_WINDOW atom")
 	}
 
-	status := C.XSetWMProtocols(display.ptr, win.ID, &atom, 1)
+	status := C.XSetWMProtocols(display.Ptr, win.ID, &atom, 1)
 	if status == 0 {
 		return errors.New("[x11] - Failed to set WM_DELETE_WINDOW protocol")
 	}
@@ -209,7 +209,7 @@ func SetWindowProtocols(display *Display, win *Window) error {
 }
 
 func StoreName(display *Display, win *Window, name string) {
-	C.XStoreName(display.ptr, win.ID, C.CString(name))
+	C.XStoreName(display.Ptr, win.ID, C.CString(name))
 }
 
 //
@@ -219,7 +219,7 @@ func StoreName(display *Display, win *Window, name string) {
 // WaitForEvent blocks until an event occurs and returns it.
 func WaitForEvent(display *Display) (*Event, error) {
 	var raw C.XEvent
-	C.XNextEvent(display.ptr, &raw)
+	C.XNextEvent(display.Ptr, &raw)
 
 	eventType := getEventType(&raw)
 	return &Event{
@@ -248,7 +248,7 @@ func GetEventWindow(e *Event) *Window {
 func GetAtom(display *Display, name string) C.Atom {
 	cName := C.CString(name)
 	defer C.free(unsafe.Pointer(cName))
-	return C.XInternAtom(display.ptr, cName, 0)
+	return C.XInternAtom(display.Ptr, cName, 0)
 }
 
 //
@@ -257,12 +257,12 @@ func GetAtom(display *Display, name string) C.Atom {
 
 // SelectInput sets the input mask for the window.
 func SelectInput(display *Display, win *Window, eventMask int64) {
-	C.XSelectInput(display.ptr, win.ID, C.long(eventMask))
+	C.XSelectInput(display.Ptr, win.ID, C.long(eventMask))
 }
 
 // Flush forces the X server to process commands in its buffer.
 func Flush(display *Display) {
-	C.XFlush(display.ptr)
+	C.XFlush(display.Ptr)
 }
 
 // GetClientMessageData retrieves the message data for a ClientMessage event.
@@ -277,15 +277,15 @@ func GetClientMessageData(e *Event) ([5]int64, error) {
 
 // GetRootWindow retrieves the root window for the default screen of the given display.
 func GetRootWindow(display *Display) (Window, error) {
-	if display.ptr == nil {
+	if display.Ptr == nil {
 		return Window{}, errors.New("[x11] - Invalid display connection")
 	}
 
 	// Get the default screen
-	screen := C.XDefaultScreen(display.ptr)
+	screen := C.XDefaultScreen(display.Ptr)
 
 	// Retrieve the root window for the default screen
-	root := C.XRootWindow(display.ptr, C.int(screen))
+	root := C.XRootWindow(display.Ptr, C.int(screen))
 
 	return Window{ID: root}, nil
 }

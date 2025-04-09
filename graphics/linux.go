@@ -2,6 +2,45 @@
 
 package graphics
 
+/*
+#cgo LDFLAGS: -lGL -lX11
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
+#include <stdlib.h>
+
+int Test() {
+	return 1;
+}
+
+// GLX Context Extensions (for OpenGL versions > 2.1)
+typedef struct {
+    int contextMajorVersion;
+    int contextMinorVersion;
+    int contextFlags;
+    int profileMask;
+} GLXContextAttributes;
+
+PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
+
+GLXContext createGLXContext(Display *display, GLXFBConfig config, GLXContext shareList, Bool direct, GLXContextAttributes attribs) {
+    int attribList[] = {
+        0x2091, attribs.contextMajorVersion, // GLX_CONTEXT_MAJOR_VERSION_ARB
+        0x2092, attribs.contextMinorVersion, // GLX_CONTEXT_MINOR_VERSION_ARB
+        0x9126, attribs.profileMask,         // GLX_CONTEXT_PROFILE_MASK_ARB
+        0
+    };
+
+    if (!glXCreateContextAttribsARB) {
+        glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
+    }
+
+    return glXCreateContextAttribsARB(display, config, shareList, direct, attribList);
+}
+
+*/
+import "C"
 import "C"
 import (
 	"fmt"
@@ -9,63 +48,12 @@ import (
 	"log"
 	"runtime"
 	"strings"
+	"unsafe"
 
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
-	"github.com/ignite-laboratories/host/egl"
 	"github.com/ignite-laboratories/host/window"
 )
-
-func init() {
-	fmt.Println("[host] - Linux - sparking EGL bridge")
-
-	// Get the default display
-	display = egl.GetDisplay(egl.DEFAULT_DISPLAY)
-	if display == egl.Display(egl.NO_DISPLAY) {
-		log.Fatalf("Failed to get EGL display: %v", egl.GetEGLError())
-	}
-
-	// Initialize EGL
-	var major, minor int32
-	if !egl.Initialize(display, &major, &minor) {
-		log.Fatalf("Failed to initialize EGL: %v", egl.GetEGLError())
-	}
-	fmt.Printf("EGL initialized. Version %d.%d\n", major, minor)
-
-	// Choose an EGL configuration
-	attribs := []int32{
-		egl.RED_SIZE, 8,
-		egl.GREEN_SIZE, 8,
-		egl.BLUE_SIZE, 8,
-		egl.ALPHA_SIZE, 8,
-		egl.DEPTH_SIZE, 8,
-		egl.RENDERABLE_TYPE, egl.OPENGL_ES2_BIT,
-		egl.NONE,
-	}
-	configs := make([]egl.Config, 1)
-	var numConfigs int32
-	if !egl.ChooseConfig(display, attribs, configs, 1, &numConfigs) {
-		// The egl.ChooseConfig call failed (e.g., a library issue or invalid attribs)
-		log.Fatalf("Failed to choose EGL configuration: %v", egl.GetEGLError())
-	}
-
-	// Check if no matching configuration was found
-	if numConfigs == 0 {
-		log.Fatal("No suitable EGL configuration found")
-	}
-	config = configs[0]
-
-	var value int32
-	egl.GetConfigAttrib(display, config, egl.RENDERABLE_TYPE, &value)
-	fmt.Printf("Chosen config RENDERABLE_TYPE: 0x%x\n", value)
-
-	// Cleanup EGL connection when the process quits
-	go func() {
-		core.WhileAlive()
-		egl.Terminate(display)
-		fmt.Println("[host] - Linux - closed EGL bridge")
-	}()
-}
 
 // SparkRenderableWindow creates a new GL renderable window using EGL.
 func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWindow {
@@ -76,43 +64,58 @@ func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWin
 	return w
 }
 
-var config egl.Config
-var display egl.Display
-
 func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	// Create an EGL surface for the provided window
-	surface := egl.CreateWindowSurface(display, config, egl.NativeWindowType(uintptr(handle.Window.ID)), nil)
-	if surface == egl.Surface(egl.NO_SURFACE) {
-		log.Fatalf("Failed to create EGL surface: %v", egl.GetEGLError())
-	}
-	defer egl.DestroySurface(display, surface)
+	// Get the default screen
+	screen := C.XDefaultScreen((*C.Display)(handle.Display.Ptr))
 
-	// Set context attributes for OpenGL 3.3 core
-	contextAttributes := []int32{
-		egl.CONTEXT_MAJOR_VERSION, 3,
-		egl.CONTEXT_MINOR_VERSION, 1,
-		//egl.CONTEXT_OPENGL_PROFILE_MASK, egl.CONTEXT_OPENGL_CORE_PROFILE_BIT,
-		int32(egl.NONE), // Terminator
-	}
-
-	// Create an EGL context
-	context := egl.CreateContext(display, config, egl.Context(egl.NO_CONTEXT), contextAttributes)
-	if context == egl.Context(egl.NO_CONTEXT) {
-		log.Fatalf("Failed to create EGL context: %v", egl.GetEGLError())
-	}
-	defer egl.DestroyContext(display, context)
-
-	// Make the EGL context current
-	if !egl.MakeCurrent(display, surface, surface, context) {
-		log.Fatalf("Failed to make EGL context current: %v", egl.GetEGLError())
+	// Define GLX attributes
+	visualAttribs := []C.int{
+		C.GLX_X_RENDERABLE, 1, // Ensure renderable
+		C.GLX_RENDER_TYPE, C.GLX_RGBA_BIT,
+		C.GLX_DRAWABLE_TYPE, C.GLX_WINDOW_BIT,
+		C.GLX_X_VISUAL_TYPE, C.GLX_TRUE_COLOR,
+		C.GLX_RED_SIZE, 8,
+		C.GLX_GREEN_SIZE, 8,
+		C.GLX_BLUE_SIZE, 8,
+		C.GLX_DEPTH_SIZE, 24,
+		C.GLX_DOUBLEBUFFER, 1,
+		0, // Null-terminate
 	}
 
-	// Set swap interval
-	if !egl.SwapInterval(display, 0) {
-		log.Printf("Failed to set swap interval (non-fatal error): %v", egl.GetEGLError())
+	// Retrieve framebuffer configs
+	var fbCount C.int
+	fbConfigs := C.glXChooseFBConfig((*C.Display)(handle.Display.Ptr), screen, &visualAttribs[0], &fbCount)
+	if fbConfigs == nil || fbCount == 0 {
+		log.Fatal("Failed to retrieve framebuffer config")
+	}
+
+	// Cast the pointer to an array and access the first framebuffer config
+	fbConfig := (*[1 << 28]C.GLXFBConfig)(unsafe.Pointer(fbConfigs))[:fbCount:fbCount][0]
+
+	// Get a visual from the framebuffer config
+	visualInfo := C.glXGetVisualFromFBConfig((*C.Display)(handle.Display.Ptr), fbConfig)
+	if visualInfo == nil {
+		log.Fatal("Failed to get visual info")
+	}
+	defer C.XFree(unsafe.Pointer(visualInfo))
+
+	// Create a GLX context for OpenGL ES 3.2
+	contextAttribs := C.GLXContextAttributes{
+		contextMajorVersion: 3,   // Request OpenGL ES major version 3
+		contextMinorVersion: 1,   // Request OpenGL ES minor version 2
+		profileMask:         0x4, // GLX_CONTEXT_ES2_PROFILE_BIT_EXT for OpenGL ES
+	}
+	glxContext := C.createGLXContext((*C.Display)(handle.Display.Ptr), fbConfig, nil, C.True, contextAttribs)
+	if glxContext == nil {
+		log.Fatal("Failed to create OpenGL 3.3 Core context")
+	}
+
+	// Make the context current
+	if ok := C.glXMakeCurrent((*C.Display)(handle.Display.Ptr), C.GLXDrawable(handle.Window.ID), glxContext); ok == 0 {
+		log.Fatal("Failed to make OpenGL context current")
 	}
 
 	// Initialize GL using Go-GL
@@ -140,9 +143,6 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 	for !handle.Destroyed && core.Alive {
 		renderer.Render()
 
-		// Swap the buffers to display the rendered frame
-		if !egl.SwapBuffers(display, surface) {
-			log.Printf("Failed to swap buffers: %v", egl.GetEGLError())
-		}
+		C.glXSwapBuffers((*C.Display)(handle.Display.Ptr), C.GLXDrawable(handle.Window.ID))
 	}
 }
