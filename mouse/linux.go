@@ -7,28 +7,27 @@ import (
 	"fmt"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
-	"github.com/ignite-laboratories/host/window"
-	"github.com/ignite-laboratories/host/x11"
+	"github.com/ignite-laboratories/host/hydra"
 	"log"
 )
 
 func init() {
 	fmt.Println("[host] - Linux - sparking X mouse access")
 	var err error
-	x, err = x11.OpenDisplay()
+	x, err = hydra.OpenDisplay()
 	if err != nil {
 		log.Fatalf("Failed to initialize X11: %s\n", err)
 	}
 
 	go func() {
 		core.WhileAlive()
-		x11.CloseDisplay(x)
+		hydra.CloseDisplay(x)
 		fmt.Println("[host] - Linux - closed X mouse access")
 	}()
 }
 
 // X provides a handle to the global connection to the X11 server.
-var x *x11.Display
+var x *hydra.Display
 
 // Sample gets the current mouse coordinates, or nil if unable to do so.
 func Sample() *std.MouseState {
@@ -38,30 +37,30 @@ func Sample() *std.MouseState {
 		}
 	}()
 
-	rootWin, _ := x11.GetRootWindow(x)
-	data, err := x11.QueryPointer(x, rootWin)
+	rootWin, _ := hydra.GetRootWindow(x)
+	data, err := hydra.QueryPointer(x, rootWin)
 	if err != nil {
 		fmt.Printf("failed to get mouse position: %v", err)
 	}
 
-	state := x11.PointerQueryToState(data, true)
+	state := hydra.PointerQueryToState(data, true)
 	return &state
 }
 
 // SampleRelative gets the current mouse coordinates relative to a window, or nil if unable to do so.
-func SampleRelative(window window.Handle) *std.MouseState {
+func SampleRelative(window hydra.Handle) *std.MouseState {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Printf("failed to get mouse position: %v\n", r)
 		}
 	}()
 
-	rootWin, _ := x11.GetRootWindow(x)
-	data, err := x11.QueryPointer(x, rootWin)
+	rootWin, _ := hydra.GetRootWindow(x)
+	data, err := hydra.QueryPointer(x, rootWin)
 	if err != nil {
 		fmt.Printf("failed to get mouse position: %v", err)
 	}
 
-	state := x11.PointerQueryToState(data, false)
+	state := hydra.PointerQueryToState(data, false)
 	return &state
 }

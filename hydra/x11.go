@@ -1,6 +1,6 @@
 //go:build linux
 
-package x11
+package hydra
 
 /*
 #cgo LDFLAGS: -lX11
@@ -288,4 +288,11 @@ func GetRootWindow(display *Display) (Window, error) {
 	root := C.XRootWindow(display.Ptr, C.int(screen))
 
 	return Window{ID: root}, nil
+}
+
+// FreePointer safely frees X11 allocated memory using XFree.
+func FreePointer(ptr unsafe.Pointer) {
+	if ptr != nil {
+		C.XFree(ptr)
+	}
 }

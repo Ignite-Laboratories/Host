@@ -2,49 +2,11 @@
 
 package graphics
 
-/*
-#cgo LDFLAGS: -lGL -lX11
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <GL/gl.h>
-#include <GL/glx.h>
-#include <stdlib.h>
-
-int Test() {
-	return 1;
-}
-
-// GLX Context Extensions (for OpenGL versions > 2.1)
-typedef struct {
-    int contextMajorVersion;
-    int contextMinorVersion;
-    int contextFlags;
-    int profileMask;
-} GLXContextAttributes;
-
-PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB = 0;
-
-GLXContext createGLXContext(Display *display, GLXFBConfig config, GLXContext shareList, Bool direct, GLXContextAttributes attribs) {
-    int attribList[] = {
-        0x2091, attribs.contextMajorVersion, // GLX_CONTEXT_MAJOR_VERSION_ARB
-        0x2092, attribs.contextMinorVersion, // GLX_CONTEXT_MINOR_VERSION_ARB
-        0x9126, attribs.profileMask,         // GLX_CONTEXT_PROFILE_MASK_ARB
-        0
-    };
-
-    if (!glXCreateContextAttribsARB) {
-        glXCreateContextAttribsARB = (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB((const GLubyte *) "glXCreateContextAttribsARB");
-    }
-
-    return glXCreateContextAttribsARB(display, config, shareList, direct, attribList);
-}
-
-*/
-import "C"
 import "C"
 import (
 	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/ignite-laboratories/host/hydra"
 	"log"
 	"runtime"
 	"strings"
@@ -52,79 +14,76 @@ import (
 
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
-	"github.com/ignite-laboratories/host/window"
 )
 
 // SparkRenderableWindow creates a new GL renderable window using EGL.
 func SparkRenderableWindow(size std.XY[int], renderer Renderable) *RenderableWindow {
 	w := &RenderableWindow{}
-	w.Handle = window.Create(size)
+	w.Handle = hydra.Create(size)
 
 	go sparkEGLBridge(w.Handle, renderer)
 	return w
 }
 
-func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
+func sparkEGLBridge(handle *hydra.Handle, renderer Renderable) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	// Get the default screen
-	screen := C.XDefaultScreen((*C.Display)(handle.Display.Ptr))
+	//err := hydra.DisableVSync(handle.Display, handle.Window)
+	//if err != nil {
+	//	log.Printf("Failed to disable VSync: %v", err)
+	//}
+
+	screen := hydra.DefaultScreen(handle.Display)
 
 	// Define GLX attributes
-	visualAttribs := []C.int{
-		C.GLX_X_RENDERABLE, 1, // Ensure renderable
-		C.GLX_RENDER_TYPE, C.GLX_RGBA_BIT,
-		C.GLX_DRAWABLE_TYPE, C.GLX_WINDOW_BIT,
-		C.GLX_X_VISUAL_TYPE, C.GLX_TRUE_COLOR,
-		C.GLX_RED_SIZE, 8,
-		C.GLX_GREEN_SIZE, 8,
-		C.GLX_BLUE_SIZE, 8,
-		C.GLX_DEPTH_SIZE, 24,
-		C.GLX_DOUBLEBUFFER, 1,
+	visualAttribs := []int32{
+		hydra.GLX_X_RENDERABLE, 1,
+		hydra.GLX_RENDER_TYPE, hydra.GLX_RGBA_BIT,
+		hydra.GLX_DRAWABLE_TYPE, hydra.GLX_WINDOW_BIT,
+		hydra.GLX_X_VISUAL_TYPE, hydra.GLX_TRUE_COLOR,
+		hydra.GLX_RED_SIZE, 8,
+		hydra.GLX_GREEN_SIZE, 8,
+		hydra.GLX_BLUE_SIZE, 8,
+		hydra.GLX_DEPTH_SIZE, 24,
+		hydra.GLX_DOUBLEBUFFER, 1,
 		0, // Null-terminate
 	}
 
-	// Retrieve framebuffer configs
-	var fbCount C.int
-	fbConfigs := C.glXChooseFBConfig((*C.Display)(handle.Display.Ptr), screen, &visualAttribs[0], &fbCount)
-	if fbConfigs == nil || fbCount == 0 {
-		log.Fatal("Failed to retrieve framebuffer config")
+	// Choose framebuffer config
+	fbConfigs, err := hydra.ChooseFramebufferConfig(handle.Display, screen, visualAttribs)
+	if err != nil {
+		log.Fatalf("Failed to choose framebuffer config: %v", err)
 	}
+	fbConfig := fbConfigs[0]
 
-	// Cast the pointer to an array and access the first framebuffer config
-	fbConfig := (*[1 << 28]C.GLXFBConfig)(unsafe.Pointer(fbConfigs))[:fbCount:fbCount][0]
-
-	// Get a visual from the framebuffer config
-	visualInfo := C.glXGetVisualFromFBConfig((*C.Display)(handle.Display.Ptr), fbConfig)
-	if visualInfo == nil {
-		log.Fatal("Failed to get visual info")
+	// Get visual information
+	visualInfo, err := hydra.GetVisualFromFBConfig(handle.Display, fbConfig)
+	if err != nil {
+		log.Fatalf("Failed to get visual info: %v", err)
 	}
-	defer C.XFree(unsafe.Pointer(visualInfo))
+	defer hydra.FreePointer(unsafe.Pointer(visualInfo))
 
-	// Create a GLX context for OpenGL ES 3.2
-	contextAttribs := C.GLXContextAttributes{
-		contextMajorVersion: 3,   // Request OpenGL ES major version 3
-		contextMinorVersion: 1,   // Request OpenGL ES minor version 2
-		profileMask:         0x4, // GLX_CONTEXT_ES2_PROFILE_BIT_EXT for OpenGL ES
-	}
-	glxContext := C.createGLXContext((*C.Display)(handle.Display.Ptr), fbConfig, nil, C.True, contextAttribs)
-	if glxContext == nil {
-		log.Fatal("Failed to create OpenGL 3.3 Core context")
+	// Create GLX context
+	context, err := hydra.CreateGLXContext(handle.Display, fbConfig, nil, true, hydra.GLXContextAttributes{
+		MajorVersion: 3,
+		MinorVersion: 3,
+		ProfileMask:  hydra.GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create GLX context: %v", err)
 	}
 
 	// Make the context current
-	if ok := C.glXMakeCurrent((*C.Display)(handle.Display.Ptr), C.GLXDrawable(handle.Window.ID), glxContext); ok == 0 {
-		log.Fatal("Failed to make OpenGL context current")
+	err = hydra.MakeGLXContextCurrent(handle.Display, handle.Window, context)
+	if err != nil {
+		log.Fatalf("Failed to make context current: %v", err)
 	}
 
-	// Initialize GL using Go-GL
+	// Initialize OpenGL using Go-GL
 	if err := gl.Init(); err != nil {
 		log.Fatalf("Failed to initialize OpenGL: %v", err)
 	}
-
-	// Initialize the rendering context
-	renderer.Initialize()
 
 	ver := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Println(ver)
@@ -139,10 +98,14 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 		}
 	}
 
-	// Start the rendering loop
+	// Initialize the renderer
+	renderer.Initialize()
+
+	fmt.Println(gl.GoStr(gl.GetString(gl.VERSION)))
+
+	// Main render loop
 	for !handle.Destroyed && core.Alive {
 		renderer.Render()
-
-		C.glXSwapBuffers((*C.Display)(handle.Display.Ptr), C.GLXDrawable(handle.Window.ID))
+		hydra.SwapBuffers(handle.Display, handle.Window)
 	}
 }

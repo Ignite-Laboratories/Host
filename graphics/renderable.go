@@ -2,7 +2,7 @@ package graphics
 
 import (
 	"github.com/ignite-laboratories/core"
-	"github.com/ignite-laboratories/host/window"
+	"github.com/ignite-laboratories/host/hydra"
 )
 
 // Renderable represents a type that has a 'Render' method.
@@ -15,5 +15,5 @@ type Renderable interface {
 type RenderableWindow struct {
 	core.Entity
 	Renderable
-	*window.Handle
+	*hydra.Handle
 }

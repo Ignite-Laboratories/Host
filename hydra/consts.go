@@ -1,9 +1,10 @@
-package x11
+package hydra
 
 /*
 #cgo LDFLAGS: -lX11
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <GL/glx.h>
 #include <stdlib.h>
 */
 import "C"
@@ -97,4 +98,21 @@ const (
 	Button3Mask = 1 << 10 // Right mouse button
 	Button4Mask = 1 << 11 // Scroll wheel up
 	Button5Mask = 1 << 12 // Scroll wheel down
+)
+
+// --- GLX ---
+
+const (
+	GLX_X_RENDERABLE  = int32(C.GLX_X_RENDERABLE)
+	GLX_RENDER_TYPE   = int32(C.GLX_RENDER_TYPE)
+	GLX_RGBA_BIT      = int32(C.GLX_RGBA_BIT)
+	GLX_DRAWABLE_TYPE = int32(C.GLX_DRAWABLE_TYPE)
+	GLX_WINDOW_BIT    = int32(C.GLX_WINDOW_BIT)
+	GLX_X_VISUAL_TYPE = int32(C.GLX_X_VISUAL_TYPE)
+	GLX_TRUE_COLOR    = int32(C.GLX_TRUE_COLOR)
+	GLX_RED_SIZE      = int32(C.GLX_RED_SIZE)
+	GLX_GREEN_SIZE    = int32(C.GLX_GREEN_SIZE)
+	GLX_BLUE_SIZE     = int32(C.GLX_BLUE_SIZE)
+	GLX_DEPTH_SIZE    = int32(C.GLX_DEPTH_SIZE)
+	GLX_DOUBLEBUFFER  = int32(C.GLX_DOUBLEBUFFER)
 )
