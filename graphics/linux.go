@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/ignite-laboratories/core"
@@ -128,6 +129,19 @@ func sparkEGLBridge(handle *window.Handle, renderer Renderable) {
 		log.Fatalf("Failed to initialize OpenGL: %v", err)
 	}
 
+	ver := gl.GoStr(gl.GetString(gl.VERSION))
+	fmt.Println(ver)
+
+	numExtensions := int32(0)
+	gl.GetIntegerv(gl.NUM_EXTENSIONS, &numExtensions)
+
+	for i := int32(0); i < numExtensions; i++ {
+		extension := gl.GoStr(gl.GetStringi(gl.EXTENSIONS, uint32(i)))
+		if strings.Contains(extension, "geometry") {
+			fmt.Println(extension)
+		}
+	}
+	
 	// Start the rendering loop
 	for !handle.Destroyed && core.Alive {
 		renderer.Render()
