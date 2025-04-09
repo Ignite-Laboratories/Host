@@ -64,14 +64,6 @@ type GLXContextAttributes struct {
 	ProfileMask  int
 }
 
-const (
-	GLX_CONTEXT_MAJOR_VERSION_ARB             = 0x2091
-	GLX_CONTEXT_MINOR_VERSION_ARB             = 0x2092
-	GLX_CONTEXT_PROFILE_MASK_ARB              = 0x9126
-	GLX_CONTEXT_CORE_PROFILE_BIT_ARB          = 0x1
-	GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB = 0x2
-)
-
 //
 // --- GLX Wrappers ---
 //
