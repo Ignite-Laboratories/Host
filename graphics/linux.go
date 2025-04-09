@@ -67,7 +67,7 @@ func sparkEGLBridge(handle *hydra.Handle, renderer Renderable) {
 	// Create GLX context
 	context, err := hydra.CreateGLXContext(handle.Display, fbConfig, nil, true, hydra.GLXContextAttributes{
 		MajorVersion: 3,
-		MinorVersion: 3,
+		MinorVersion: 1,
 		ProfileMask:  hydra.GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
 	})
 	if err != nil {
