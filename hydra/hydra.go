@@ -21,14 +21,7 @@ func init() {
 	wg.Wait()
 }
 
-type create struct {
-	Title  string
-	Size   std.XY[int]
-	Pos    std.XY[int]
-	Window *sdl.Window
-}
-
-var bridge = make(chan *std.Synchro[create])
+var bridge = make(chan *std.Synchro)
 
 var mutex sync.Mutex
 
