@@ -41,18 +41,7 @@ func HasNoWindows(ctx core.Context) bool {
 }
 
 func mainLoop() {
-	std.SynchroEngage(bridge, func(packet *create) {
-		window, err := sdl.CreateWindow(
-			packet.Title,
-			int32(packet.Pos.X), int32(packet.Pos.Y),
-			int32(packet.Size.X), int32(packet.Size.Y),
-			sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
-		)
-		if err != nil {
-			log.Fatalf("[%v] Failed to create SDL window: %v", ModuleName, err)
-		}
-		packet.Window = window
-	})
+	std.SynchroEngage(bridge)
 
 	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 		switch e := event.(type) {
@@ -108,13 +97,19 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 }
 
 func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *WindowHead {
-	packet := std.SynchroSend(bridge, &create{
-		Title: title,
-		Size:  size,
-		Pos:   pos,
+	var window *sdl.Window
+	std.SynchroSend(bridge, func() {
+		w, err := sdl.CreateWindow(
+			title,
+			int32(pos.X), int32(pos.Y),
+			int32(size.X), int32(size.Y),
+			sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
+		)
+		if err != nil {
+			log.Fatalf("[%v] Failed to create SDL window: %v", ModuleName, err)
+		}
+		window = w
 	})
-
-	window := packet.Window
 
 	w := &WindowHead{}
 	w.WindowID, _ = window.GetID()
