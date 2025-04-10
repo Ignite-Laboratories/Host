@@ -21,7 +21,7 @@ func init() {
 	wg.Wait()
 }
 
-var bridge = make(chan *std.Synchro)
+var synchro = make(std.Synchro)
 
 var mutex sync.Mutex
 
@@ -34,7 +34,7 @@ func HasNoWindows(ctx core.Context) bool {
 }
 
 func mainLoop() {
-	std.SynchroEngage(bridge)
+	synchro.Engage() // Listen for external execution
 
 	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 		switch e := event.(type) {
@@ -91,7 +91,7 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 
 func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *WindowHead {
 	var window *sdl.Window
-	std.SynchroSend(bridge, func() {
+	synchro.Send(func() {
 		w, err := sdl.CreateWindow(
 			title,
 			int32(pos.X), int32(pos.Y),
