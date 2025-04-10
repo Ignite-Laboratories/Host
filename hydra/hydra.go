@@ -20,6 +20,15 @@ func init() {
 	wg.Wait()
 }
 
+type create struct {
+	Title  string
+	Size   std.XY[int]
+	Pos    std.XY[int]
+	Window *sdl.Window
+}
+
+var bridge = make(chan *std.Synchro[create])
+
 var mutex sync.Mutex
 
 // Windows provides the pointer handles to the underlying windows by their unique entity ID.
@@ -60,21 +69,18 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	wg.Done()
 
 	for core.Alive {
-		if requesting {
-			// Create an SDL window
+		std.SynchroEngage(bridge, func(packet *create) {
 			window, err := sdl.CreateWindow(
-				requestedTitle,
-				int32(requestedPos.X), int32(requestedPos.Y),
-				int32(requestedSize.X), int32(requestedSize.Y),
+				packet.Title,
+				int32(packet.Pos.X), int32(packet.Pos.Y),
+				int32(packet.Size.X), int32(packet.Size.Y),
 				sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
 			)
 			if err != nil {
 				log.Fatalf("Failed to create SDL window: %v", err)
 			}
-			created = window
-			wait.Done()
-			requesting = false
-		}
+			packet.Window = window
+		})
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch e := event.(type) {
@@ -101,33 +107,16 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	time.Sleep(time.Millisecond * 250)
 }
 
-var wait *sync.WaitGroup
-var created *sdl.Window
-var requestedSize std.XY[int]
-var requestedPos std.XY[int]
-var requestedTitle string
-var requesting bool
-
-func setRequesting(wg *sync.WaitGroup, title string, size std.XY[int], pos std.XY[int], val bool) {
-	wait = wg
-	requestedTitle = title
-	requestedSize = size
-	requestedPos = pos
-	requesting = val
-}
-
 func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *WindowCtrl {
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	fmt.Println("[host] - sparking new window")
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	setRequesting(&wg, title, size, pos, true)
-	wg.Wait()
+	packet := std.SynchroSend(bridge, &create{
+		Title: title,
+		Size:  size,
+		Pos:   pos,
+	})
 
-	window := created
+	window := packet.Window
 
 	w := &WindowCtrl{}
 	w.WindowID, _ = window.GetID()
