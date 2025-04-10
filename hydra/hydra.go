@@ -82,11 +82,14 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 				// Handle specific window close events
 				if e.Event == sdl.WINDOWEVENT_CLOSE {
 					mutex.Lock()
-					fmt.Printf("Window %d requested close.\n", e.WindowID)
+					fmt.Printf("Window %d closing.\n", e.WindowID)
 					for _, sys := range Windows {
 						if sys.WindowID == e.WindowID {
 							sys.Stop()
-							sys.Window.Destroy()
+							err := sys.Window.Destroy()
+							if err != nil {
+								fmt.Printf("Failed to destroy window: %v\n", err)
+							}
 							delete(Windows, sys.ID)
 						}
 					}

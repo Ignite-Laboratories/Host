@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 import "github.com/veandco/go-sdl2/sdl"
 
@@ -69,6 +70,7 @@ func (w *WindowCtrl) start(action core.Action) {
 	for core.Alive && w.Alive {
 		// Busy wait for the next impulse signal
 		for core.Alive && w.Alive && !w.ready {
+			time.Sleep(time.Millisecond)
 		}
 		w.mutex.Lock()
 		w.ready = false
