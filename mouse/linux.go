@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
+	"github.com/ignite-laboratories/host"
 	"github.com/ignite-laboratories/host/hydraold"
 	"log"
 )
 
 func init() {
-	fmt.Println("[host] - Linux - sparking X mouse access")
+	fmt.Printf("[%v] - Linux - sparking X mouse access\n", host.ModuleName)
 	var err error
 	x, err = hydraold.OpenDisplay()
 	if err != nil {
@@ -22,7 +23,7 @@ func init() {
 	go func() {
 		core.WhileAlive()
 		hydraold.CloseDisplay(x)
-		fmt.Println("[host] - Linux - closed X mouse access")
+		fmt.Printf("[%v] - Linux - closed X mouse access\n", host.ModuleName)
 	}()
 }
 
