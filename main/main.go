@@ -1,34 +1,33 @@
 package main
 
 import (
-	"github.com/go-gl/gl/v3.3-core/gl"
+	"fmt"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
-	"github.com/ignite-laboratories/host/graphics"
-	"github.com/ignite-laboratories/host/hydraold"
+	"github.com/ignite-laboratories/core/temporal"
+	"github.com/ignite-laboratories/core/when"
+	"github.com/ignite-laboratories/host/mouse"
 )
 
-type SolidColorWindow struct {
-	*graphics.RenderableWindow
-	Color std.RGBA
-}
-
-func NewSolidColorWindow(color std.RGBA) *SolidColorWindow {
-	return &SolidColorWindow{
-		Color: color,
-	}
-}
-
-func (w *SolidColorWindow) Render() {
-	// Clear the window with a background color
-	gl.ClearColor(w.Color.R, w.Color.G, w.Color.B, w.Color.A)
-	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-}
+/**
+This example prints the mouse state whenever the cursor
+hovers back over any part of the screen that is half the distance
+from the furthest point the cursor has traveled since launching.
+*/
 
 func main() {
-	for i := 0; i < 7; i++ {
-		graphics.SparkRenderableWindow(std.XY[int]{X: 640, Y: 480}, NewSolidColorWindow(std.RandomRGB()))
-	}
-	core.Impulse.StopWhen(hydraold.StopPotential)
+	temporal.Calculation(core.Impulse, when.Frequency(&mouse.SampleRate), false, CalcCoords)
 	core.Impulse.Spark()
+}
+
+var highestWidth = 0
+
+func CalcCoords(ctx core.Context) *std.MouseState {
+	coords := mouse.Sample()
+	if coords.Position.X < highestWidth/2 {
+		fmt.Println(*coords)
+	} else if coords.Position.X > highestWidth {
+		highestWidth = coords.Position.X
+	}
+	return coords
 }
