@@ -1,6 +1,6 @@
 //go:build linux
 
-package hydra
+package hydraold
 
 /*
 #cgo LDFLAGS: -lX11

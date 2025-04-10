@@ -1,2 +1,2 @@
-// Package hydra provides a bridge between X11 and Go.
+// Package hydra provides a way to create impulsable graphical contexts
 package hydra

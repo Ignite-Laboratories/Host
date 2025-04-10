@@ -5,7 +5,7 @@ import (
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
 	"github.com/ignite-laboratories/host/graphics"
-	"github.com/ignite-laboratories/host/hydra"
+	"github.com/ignite-laboratories/host/hydraold"
 )
 
 type SolidColorWindow struct {
@@ -29,6 +29,6 @@ func main() {
 	for i := 0; i < 7; i++ {
 		graphics.SparkRenderableWindow(std.XY[int]{X: 640, Y: 480}, NewSolidColorWindow(std.RandomRGB()))
 	}
-	core.Impulse.StopWhen(hydra.StopPotential)
+	core.Impulse.StopWhen(hydraold.StopPotential)
 	core.Impulse.Spark()
 }

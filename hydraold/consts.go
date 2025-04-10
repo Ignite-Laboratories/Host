@@ -1,4 +1,4 @@
-package hydra
+package hydraold
 
 /*
 #cgo LDFLAGS: -lX11
