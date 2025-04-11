@@ -37,9 +37,9 @@ func (w *Head) start(manageable Manageable) {
 	defer sdl.GLDeleteContext(glContext)
 
 	if err := sdl.GLSetSwapInterval(-1); err != nil {
-		fmt.Printf("[%v] adaptive v-sync not available, falling back to v-sync", ModuleName)
+		fmt.Printf("[%v] adaptive v-sync not available, falling back to v-sync\n", ModuleName)
 		if err := sdl.GLSetSwapInterval(1); err != nil {
-			fmt.Printf("[%v] standard V-Sync also failed: %v", ModuleName, err)
+			fmt.Printf("[%v] standard V-Sync also failed: %v\n", ModuleName, err)
 		}
 	}
 
