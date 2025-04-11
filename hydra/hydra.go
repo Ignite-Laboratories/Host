@@ -92,8 +92,6 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	for core.Alive {
 		mainLoop()
 	}
-	fmt.Println("here")
-	sdl.Quit()
 }
 
 func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *WindowHead {
