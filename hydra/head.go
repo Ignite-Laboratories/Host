@@ -25,7 +25,7 @@ type Head struct {
 	mutex sync.Mutex
 }
 
-func (w *Head) start(action core.Action) {
+func (w *Head) start(initialize func(), action core.Action) {
 	runtime.LockOSThread()
 
 	// Create OpenGL context
@@ -61,6 +61,8 @@ func (w *Head) start(action core.Action) {
 			fmt.Println("Found geometry-related extension:", extension)
 		}
 	}
+
+	initialize()
 
 	for core.Alive && w.Alive {
 		// Busy wait for the next impulse signal

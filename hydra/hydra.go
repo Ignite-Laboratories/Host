@@ -96,13 +96,27 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	fmt.Printf("[%v] SDL integration stopped\n", ModuleName)
 }
 
-func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *Head {
+func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std.XY[int], initialize func(), action core.Action, potential core.Potential, muted bool) *Head {
 	var window *sdl.Window
 	synchro.Send(func() {
+		var posX = sdl.WINDOWPOS_UNDEFINED
+		var posY = sdl.WINDOWPOS_UNDEFINED
+		if pos != nil {
+			posX = pos.X
+			posY = pos.Y
+		}
+
+		var sizeX = 640
+		var sizeY = 480
+		if size != nil {
+			sizeX = size.X
+			sizeY = size.Y
+		}
+
 		w, err := sdl.CreateWindow(
 			title,
-			int32(pos.X), int32(pos.Y),
-			int32(size.X), int32(size.Y),
+			int32(posX), int32(posY),
+			int32(sizeX), int32(sizeY),
 			sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
 		)
 		if err != nil {
@@ -116,12 +130,12 @@ func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.X
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
 	Windows[w.ID] = w
-	go w.start(action)
+	go w.start(initialize, action)
 	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
 	return w
 }
 
-func CreateFullscreenWindow(engine *core.Engine, title string, action core.Action, potential core.Potential, muted bool) *Head {
+func CreateFullscreenWindow(engine *core.Engine, title string, initialize func(), action core.Action, potential core.Potential, muted bool) *Head {
 	var window *sdl.Window
 	synchro.Send(func() {
 		w, err := sdl.CreateWindow(
@@ -141,7 +155,7 @@ func CreateFullscreenWindow(engine *core.Engine, title string, action core.Actio
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
 	Windows[w.ID] = w
-	go w.start(action)
+	go w.start(initialize, action)
 	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
 	return w
 }
