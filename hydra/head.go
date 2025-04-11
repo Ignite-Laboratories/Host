@@ -1,10 +1,8 @@
 package hydra
 
 import (
-	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/ignite-laboratories/core"
-	"log"
 	"runtime"
 	"sync"
 	"time"
@@ -32,20 +30,20 @@ func (w *Head) start(manageable Manageable) {
 	// Create OpenGL context
 	glContext, err := w.Window.GLCreateContext()
 	if err != nil {
-		log.Fatalf("[%v] failed to create OpenGL context: %v", ModuleName, err)
+		core.Fatalf(ModuleName, "failed to create OpenGL context: %v\n", err)
 	}
 	defer sdl.GLDeleteContext(glContext)
 
 	if err := sdl.GLSetSwapInterval(-1); err != nil {
-		fmt.Printf("[%v] adaptive v-sync not available, falling back to v-sync\n", ModuleName)
+		core.Printf(ModuleName, "adaptive v-sync not available, falling back to v-sync\n")
 		if err := sdl.GLSetSwapInterval(1); err != nil {
-			fmt.Printf("[%v] standard V-Sync also failed: %v\n", ModuleName, err)
+			core.Printf(ModuleName, "standard V-Sync also failed: %v\n", err)
 		}
 	}
 
 	// Initialize OpenGL
 	if err := gl.Init(); err != nil {
-		log.Fatalf("[%v] failed to initialize OpenGL: %v", ModuleName, err)
+		core.Fatalf(ModuleName, "failed to initialize OpenGL: %v", err)
 	}
 
 	// Get OpenGL version

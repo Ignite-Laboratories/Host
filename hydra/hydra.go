@@ -1,17 +1,15 @@
 package hydra
 
 import (
-	"fmt"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
 	"github.com/veandco/go-sdl2/sdl"
-	"log"
 	"runtime"
 	"sync"
 )
 
 func init() {
-	fmt.Printf("[%v] sparking SDL integration\n", ModuleName)
+	core.Printf(ModuleName, "sparking SDL integration\n")
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -43,11 +41,11 @@ func mainLoop() {
 				mutex.Lock()
 				for _, sys := range Windows {
 					if sys.WindowID == e.WindowID {
-						fmt.Printf("[%v] [%d.%d] closing window\n", ModuleName, sys.WindowID, sys.ID)
+						core.Printf(ModuleName, "[%d.%d] closing window\n", sys.WindowID, sys.ID)
 						sys.Stop()
 						err := sys.Window.Destroy()
 						if err != nil {
-							fmt.Printf("[%v] failed to destroy window: %v\n", ModuleName, err)
+							core.Printf(ModuleName, "failed to destroy window: %v\n", err)
 						}
 						delete(Windows, sys.ID)
 					}
@@ -70,11 +68,11 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 
 	// Initialize SDL
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
-		log.Fatalf("[%v] failed to initialize SDL: %v", ModuleName, err)
+		core.Fatalf(ModuleName, "failed to initialize SDL: %v\n", err)
 	}
 	defer sdl.Quit()
 	driver, _ := sdl.GetCurrentVideoDriver()
-	fmt.Printf("[%v] SDL video driver: %s\n", ModuleName, driver)
+	core.Printf(ModuleName, "SDL video driver: %s\n", driver)
 
 	// Set OpenGL attributes
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, major)
@@ -93,7 +91,7 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 		mainLoop()
 	}
 
-	fmt.Printf("[%v] SDL integration stopped\n", ModuleName)
+	core.Printf(ModuleName, "SDL integration stopped\n")
 }
 
 func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std.XY[int], manageable Manageable, potential core.Potential, muted bool) *Head {
@@ -120,7 +118,7 @@ func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std
 			sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
 		)
 		if err != nil {
-			log.Fatalf("[%v] failed to create SDL window: %v", ModuleName, err)
+			core.Fatalf(ModuleName, "failed to create SDL window: %v\n", err)
 		}
 		window = w
 	})
@@ -131,7 +129,7 @@ func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
 	Windows[w.ID] = w
 	go w.start(manageable)
-	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
+	core.Printf(ModuleName, "[%d.%d] window created\n", w.WindowID, w.ID)
 	return w
 }
 
@@ -145,7 +143,7 @@ func CreateFullscreenWindow(engine *core.Engine, title string, manageable Manage
 			sdl.WINDOW_OPENGL|sdl.WINDOW_FULLSCREEN_DESKTOP,
 		)
 		if err != nil {
-			log.Fatalf("[%v] failed to create SDL window: %v", ModuleName, err)
+			core.Fatalf(ModuleName, "failed to create SDL window: %v\n", err)
 		}
 		window = w
 	})
@@ -156,6 +154,6 @@ func CreateFullscreenWindow(engine *core.Engine, title string, manageable Manage
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
 	Windows[w.ID] = w
 	go w.start(manageable)
-	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
+	core.Printf(ModuleName, "[%d.%d] window created\n", w.WindowID, w.ID)
 	return w
 }
