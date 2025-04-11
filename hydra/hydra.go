@@ -67,6 +67,8 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 		log.Fatalf("[%v] Failed to initialize SDL: %v", ModuleName, err)
 	}
 	defer sdl.Quit()
+	driver, _ := sdl.GetCurrentVideoDriver()
+	fmt.Printf("Current SDL Video Driver: %s\n", driver)
 
 	// Set OpenGL attributes
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, major)
