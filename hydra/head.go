@@ -23,8 +23,10 @@ type Head struct {
 	mutex sync.Mutex
 }
 
-func (w *Head) start(initialize func(), action core.Action) {
+func (w *Head) start(manageable Manageable) {
 	runtime.LockOSThread()
+
+	sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1)
 
 	// Create OpenGL context
 	glContext, err := w.Window.GLCreateContext()
@@ -33,9 +35,11 @@ func (w *Head) start(initialize func(), action core.Action) {
 	}
 	defer sdl.GLDeleteContext(glContext)
 
-	// Enable VSync
-	if err := sdl.GLSetSwapInterval(1); err != nil {
-		log.Printf("[%v] failed to set VSync: %v", ModuleName, err)
+	if err := sdl.GLSetSwapInterval(-1); err != nil {
+		log.Printf("Adaptive V-Sync not available, falling back to V-Sync: %v", err)
+		if err := sdl.GLSetSwapInterval(1); err != nil {
+			log.Printf("Standard V-Sync also failed: %v", err)
+		}
 	}
 
 	// Initialize OpenGL
@@ -60,7 +64,7 @@ func (w *Head) start(initialize func(), action core.Action) {
 	//	}
 	//}
 
-	initialize()
+	manageable.Initialize()
 
 	for core.Alive && w.Alive {
 		// Busy wait for the next impulse signal
@@ -72,10 +76,12 @@ func (w *Head) start(initialize func(), action core.Action) {
 		ctx := w.ctx
 		w.mutex.Unlock()
 
-		action(ctx)
+		manageable.Render(ctx)
 
 		w.Window.GLSwap()
 	}
+
+	manageable.Cleanup()
 }
 
 func (w *Head) impulse(ctx core.Context) {

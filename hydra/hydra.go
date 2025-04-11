@@ -96,7 +96,7 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	fmt.Printf("[%v] SDL integration stopped\n", ModuleName)
 }
 
-func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std.XY[int], initialize func(), action core.Action, potential core.Potential, muted bool) *Head {
+func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std.XY[int], manageable Manageable, potential core.Potential, muted bool) *Head {
 	var window *sdl.Window
 	synchro.Send(func() {
 		var posX = sdl.WINDOWPOS_UNDEFINED
@@ -130,12 +130,12 @@ func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
 	Windows[w.ID] = w
-	go w.start(initialize, action)
+	go w.start(manageable)
 	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
 	return w
 }
 
-func CreateFullscreenWindow(engine *core.Engine, title string, initialize func(), action core.Action, potential core.Potential, muted bool) *Head {
+func CreateFullscreenWindow(engine *core.Engine, title string, manageable Manageable, potential core.Potential, muted bool) *Head {
 	var window *sdl.Window
 	synchro.Send(func() {
 		w, err := sdl.CreateWindow(
@@ -155,7 +155,7 @@ func CreateFullscreenWindow(engine *core.Engine, title string, initialize func()
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
 	Windows[w.ID] = w
-	go w.start(initialize, action)
+	go w.start(manageable)
 	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
 	return w
 }
