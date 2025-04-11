@@ -55,6 +55,13 @@ func mainLoop() {
 				}
 				mutex.Unlock()
 			}
+		case *sdl.KeyboardEvent:
+			if e.Type == sdl.KEYDOWN {
+				switch e.Keysym.Sym {
+				case sdl.K_ESCAPE:
+					core.ShutdownNow()
+				}
+			}
 		}
 	}
 }
@@ -99,6 +106,31 @@ func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.X
 			int32(pos.X), int32(pos.Y),
 			int32(size.X), int32(size.Y),
 			sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
+		)
+		if err != nil {
+			log.Fatalf("[%v] Failed to create SDL window: %v", ModuleName, err)
+		}
+		window = w
+	})
+
+	w := &WindowHead{}
+	w.WindowID, _ = window.GetID()
+	w.Window = window
+	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
+	Windows[w.ID] = w
+	go w.start(action)
+	fmt.Printf("[%v] [%d.%d] window created\n", ModuleName, w.WindowID, w.ID)
+	return w
+}
+
+func CreateFullscreenWindow(engine *core.Engine, title string, action core.Action, potential core.Potential, muted bool) *WindowHead {
+	var window *sdl.Window
+	synchro.Send(func() {
+		w, err := sdl.CreateWindow(
+			title,
+			sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+			1024, 768,
+			sdl.WINDOW_OPENGL|sdl.WINDOW_FULLSCREEN_DESKTOP,
 		)
 		if err != nil {
 			log.Fatalf("[%v] Failed to create SDL window: %v", ModuleName, err)
