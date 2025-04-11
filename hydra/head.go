@@ -1,6 +1,7 @@
 package hydra
 
 import (
+	"fmt"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/ignite-laboratories/core"
 	"log"
@@ -36,9 +37,9 @@ func (w *Head) start(manageable Manageable) {
 	defer sdl.GLDeleteContext(glContext)
 
 	if err := sdl.GLSetSwapInterval(-1); err != nil {
-		log.Printf("[%v] adaptive v-sync not available, falling back to v-sync", ModuleName)
+		fmt.Printf("[%v] adaptive v-sync not available, falling back to v-sync", ModuleName)
 		if err := sdl.GLSetSwapInterval(1); err != nil {
-			log.Printf("[%v] standard V-Sync also failed: %v", ModuleName, err)
+			fmt.Printf("[%v] standard V-Sync also failed: %v", ModuleName, err)
 		}
 	}
 
