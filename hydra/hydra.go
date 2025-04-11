@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	fmt.Printf("[%v] - sparking SDL2 integration\n", ModuleName)
+	fmt.Printf("[%v] sparking SDL integration\n", ModuleName)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -25,7 +25,7 @@ var synchro = make(std.Synchro)
 var mutex sync.Mutex
 
 // Windows provides the pointer handles to the underlying windows by their unique entity ID.
-var Windows = make(map[uint64]*WindowHead)
+var Windows = make(map[uint64]*Head)
 
 // HasNoWindows provides a potential that returns true when all the windows have been globally closed.
 func HasNoWindows(ctx core.Context) bool {
@@ -47,7 +47,7 @@ func mainLoop() {
 						sys.Stop()
 						err := sys.Window.Destroy()
 						if err != nil {
-							fmt.Printf("[%v] Failed to destroy window: %v\n", ModuleName, err)
+							fmt.Printf("[%v] failed to destroy window: %v\n", ModuleName, err)
 						}
 						delete(Windows, sys.ID)
 					}
@@ -93,10 +93,10 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 		mainLoop()
 	}
 
-	fmt.Printf("[%v] SDL2 integration stopped\n", ModuleName)
+	fmt.Printf("[%v] SDL integration stopped\n", ModuleName)
 }
 
-func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *WindowHead {
+func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.XY[int], action core.Action, potential core.Potential, muted bool) *Head {
 	var window *sdl.Window
 	synchro.Send(func() {
 		w, err := sdl.CreateWindow(
@@ -106,12 +106,12 @@ func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.X
 			sdl.WINDOW_OPENGL|sdl.WINDOW_RESIZABLE,
 		)
 		if err != nil {
-			log.Fatalf("[%v] Failed to create SDL window: %v", ModuleName, err)
+			log.Fatalf("[%v] failed to create SDL window: %v", ModuleName, err)
 		}
 		window = w
 	})
 
-	w := &WindowHead{}
+	w := &Head{}
 	w.WindowID, _ = window.GetID()
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
@@ -121,7 +121,7 @@ func CreateWindow(engine *core.Engine, title string, size std.XY[int], pos std.X
 	return w
 }
 
-func CreateFullscreenWindow(engine *core.Engine, title string, action core.Action, potential core.Potential, muted bool) *WindowHead {
+func CreateFullscreenWindow(engine *core.Engine, title string, action core.Action, potential core.Potential, muted bool) *Head {
 	var window *sdl.Window
 	synchro.Send(func() {
 		w, err := sdl.CreateWindow(
@@ -131,12 +131,12 @@ func CreateFullscreenWindow(engine *core.Engine, title string, action core.Actio
 			sdl.WINDOW_OPENGL|sdl.WINDOW_FULLSCREEN_DESKTOP,
 		)
 		if err != nil {
-			log.Fatalf("[%v] Failed to create SDL window: %v", ModuleName, err)
+			log.Fatalf("[%v] failed to create SDL window: %v", ModuleName, err)
 		}
 		window = w
 	})
 
-	w := &WindowHead{}
+	w := &Head{}
 	w.WindowID, _ = window.GetID()
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)

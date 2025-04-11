@@ -6,13 +6,14 @@ import (
 	"github.com/ignite-laboratories/core"
 	"log"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 )
 import "github.com/veandco/go-sdl2/sdl"
 
-// WindowHead represents an SDL2 windowed rendering system.
-type WindowHead struct {
+// Head represents a control surface for neural rendering to an SDL window.
+type Head struct {
 	*core.System
 
 	WindowID uint32
@@ -24,7 +25,7 @@ type WindowHead struct {
 	mutex sync.Mutex
 }
 
-func (w *WindowHead) start(action core.Action) {
+func (w *Head) start(action core.Action) {
 	runtime.LockOSThread()
 
 	// Create OpenGL context
@@ -47,18 +48,19 @@ func (w *WindowHead) start(action core.Action) {
 	// Get OpenGL version
 	glVersion := gl.GoStr(gl.GetString(gl.VERSION))
 	fmt.Printf("[%v] [%d.%d] initialized with %s\n", ModuleName, w.WindowID, w.ID, glVersion)
-	//fmt.Println("OpenGL Version:", glVersion)
-	//
-	//// Get and print extensions
-	//numExtensions := int32(0)
-	//gl.GetIntegerv(gl.NUM_EXTENSIONS, &numExtensions)
-	//
-	//for i := int32(0); i < numExtensions; i++ {
-	//	extension := gl.GoStr(gl.GetStringi(gl.EXTENSIONS, uint32(i)))
-	//	if strings.Contains(extension, "geometry") {
-	//		fmt.Println("Found geometry-related extension:", extension)
-	//	}
-	//}
+
+	fmt.Println("OpenGL Version:", glVersion)
+
+	// Get and print extensions
+	numExtensions := int32(0)
+	gl.GetIntegerv(gl.NUM_EXTENSIONS, &numExtensions)
+
+	for i := int32(0); i < numExtensions; i++ {
+		extension := gl.GoStr(gl.GetStringi(gl.EXTENSIONS, uint32(i)))
+		if strings.Contains(extension, "geometry") {
+			fmt.Println("Found geometry-related extension:", extension)
+		}
+	}
 
 	for core.Alive && w.Alive {
 		// Busy wait for the next impulse signal
@@ -76,7 +78,7 @@ func (w *WindowHead) start(action core.Action) {
 	}
 }
 
-func (w *WindowHead) impulse(ctx core.Context) {
+func (w *Head) impulse(ctx core.Context) {
 	w.mutex.Lock()
 	defer w.mutex.Unlock()
 
