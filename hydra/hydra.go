@@ -93,6 +93,7 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	for core.Alive {
 		mainLoop()
 	}
+	fmt.Println("here")
 	sdl.Quit()
 }
 
