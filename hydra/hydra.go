@@ -8,7 +8,6 @@ import (
 	"log"
 	"runtime"
 	"sync"
-	"time"
 )
 
 func init() {
@@ -94,8 +93,6 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	for core.Alive {
 		mainLoop()
 	}
-	// Give sub-systems a moment to finish their current impulse's execution before destruction
-	time.Sleep(time.Millisecond * 250)
 	sdl.Quit()
 }
 
