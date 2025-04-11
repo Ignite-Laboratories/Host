@@ -59,7 +59,6 @@ func mainLoop() {
 				switch e.Keysym.Sym {
 				case sdl.K_ESCAPE:
 					go core.ShutdownNow()
-					return
 				}
 			}
 		}
