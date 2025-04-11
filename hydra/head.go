@@ -34,7 +34,7 @@ func (w *Head) start(initialize func(), action core.Action) {
 	defer sdl.GLDeleteContext(glContext)
 
 	// Enable VSync
-	if err := sdl.GLSetSwapInterval(0); err != nil {
+	if err := sdl.GLSetSwapInterval(1); err != nil {
 		log.Printf("[%v] failed to set VSync: %v", ModuleName, err)
 	}
 
