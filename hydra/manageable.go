@@ -4,6 +4,6 @@ import "github.com/ignite-laboratories/core"
 
 type Manageable interface {
 	Initialize()
-	Render(core.Context)
+	Impulse(core.Context)
 	Cleanup()
 }

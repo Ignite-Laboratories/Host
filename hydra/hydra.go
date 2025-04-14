@@ -41,7 +41,7 @@ func mainLoop() {
 				mutex.Lock()
 				for _, sys := range Windows {
 					if sys.WindowID == e.WindowID {
-						core.Printf(ModuleName, "[%d.%d] closing window\n", sys.WindowID, sys.ID)
+						core.Printf(ModuleName, "destroying head [%d.%d]\n", sys.WindowID, sys.ID)
 						sys.Stop()
 						err := sys.Window.Destroy()
 						if err != nil {
@@ -127,9 +127,11 @@ func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std
 	w.WindowID, _ = window.GetID()
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
+	w.synchro = make(std.Synchro)
+	w.manageable = manageable
 	Windows[w.ID] = w
-	go w.start(manageable)
-	core.Printf(ModuleName, "[%d.%d] window created\n", w.WindowID, w.ID)
+	go w.run()
+	core.Printf(ModuleName, "windowed head [%d.%d] created\n", w.WindowID, w.ID)
 	return w
 }
 
@@ -152,8 +154,10 @@ func CreateFullscreenWindow(engine *core.Engine, title string, manageable Manage
 	w.WindowID, _ = window.GetID()
 	w.Window = window
 	w.System = core.CreateSystem(engine, w.impulse, potential, muted)
+	w.synchro = make(std.Synchro)
+	w.manageable = manageable
 	Windows[w.ID] = w
-	go w.start(manageable)
-	core.Printf(ModuleName, "[%d.%d] window created\n", w.WindowID, w.ID)
+	go w.run()
+	core.Printf(ModuleName, "fullscreen head [%d.%d] created\n", w.WindowID, w.ID)
 	return w
 }
