@@ -3,9 +3,9 @@ package hydra
 import (
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
+	"github.com/veandco/go-sdl2/sdl"
 	"time"
 )
-import "github.com/veandco/go-sdl2/sdl"
 
 // Head represents a control surface for neural rendering.
 type Head struct {

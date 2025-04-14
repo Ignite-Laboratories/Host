@@ -6,11 +6,13 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"runtime"
 	"sync"
+	"time"
 )
 
 func init() {
 	core.Printf(ModuleName, "sparking SDL integration\n")
 
+	// Fire off SDL2 on its own thread, but wait for it to initialize
 	var wg sync.WaitGroup
 	wg.Add(1)
 	// NOTE: The parameters here set the OpenGL specification
@@ -71,8 +73,6 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 		core.Fatalf(ModuleName, "failed to initialize SDL: %v\n", err)
 	}
 	defer sdl.Quit()
-	driver, _ := sdl.GetCurrentVideoDriver()
-	core.Printf(ModuleName, "SDL video driver: %s\n", driver)
 
 	// Set OpenGL attributes
 	sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, major)
@@ -86,6 +86,13 @@ func sparkSDL2(major int, minor int, coreProfile bool, wg *sync.WaitGroup) {
 	sdl.GLSetAttribute(sdl.GL_DEPTH_SIZE, 24)
 
 	wg.Done()
+	// Let the rest of things 'initialize' before proceeding
+	time.Sleep(time.Millisecond)
+
+	driver, _ := sdl.GetCurrentVideoDriver()
+	core.Verbosef(ModuleName, "SDL video driver: %s\n", driver)
+	driver = sdl.GetCurrentAudioDriver()
+	core.Verbosef(ModuleName, "SDL audio driver: %s\n", driver)
 
 	for core.Alive {
 		mainLoop()
