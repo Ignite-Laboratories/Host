@@ -1,9 +1,9 @@
 package sdl2
 
 import (
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/ignite-laboratories/core"
 	"github.com/ignite-laboratories/core/std"
-	"github.com/ignite-laboratories/host/opengl"
 	"github.com/veandco/go-sdl2/sdl"
 	"runtime"
 	"sync"
@@ -44,6 +44,12 @@ type Window struct {
 	Synchro  std.Synchro
 }
 
+func (w *Window) destroy() {
+	Synchro.Send(func() {
+		w.Handle.Destroy()
+	})
+}
+
 func newSDL2() {
 	once = sync.Once{}
 	Windows = make(map[uint64]*Window)
@@ -76,7 +82,7 @@ func run() {
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
 
-		core.Printf(ModuleName, "sparking SDL2 integration\n")
+		core.Verbosef(ModuleName, "sparking SDL2 integration\n")
 		running = true
 
 		// Initialize SDL
@@ -135,7 +141,7 @@ func run() {
 			}
 		}
 
-		core.Printf(ModuleName, "SDL2 integration stopped\n")
+		core.Verbosef(ModuleName, "SDL2 integration stopped\n")
 		newSDL2() // Reset the SDL2 system for re-activation
 	}()
 	wg.Wait()
@@ -177,14 +183,16 @@ func CreateWindow(engine *core.Engine, title string, size *std.XY[int], pos *std
 	w.Handle = handle
 	w.WindowID, _ = handle.GetID()
 	w.System = core.CreateSystem(engine, func(ctx core.Context) {
-		w.Synchro.Send(func() {
-			impulsable.Impulse(ctx)
-			w.Handle.GLSwap()
-		})
+		if w.Alive {
+			w.Synchro.Send(func() {
+				impulsable.Impulse(ctx)
+				w.Handle.GLSwap()
+			})
+		}
 	}, potential, muted)
 	Windows[w.ID] = w
 
-	core.Printf(ModuleName, "window [%d.%d] created\n", w.WindowID, w.ID)
+	core.Verbosef(ModuleName, "window [%d.%d] created\n", w.WindowID, w.ID)
 	go w.start(impulsable)
 
 	return w
@@ -212,14 +220,16 @@ func CreateFullscreenWindow(engine *core.Engine, title string, impulsable core.I
 	w.Handle = handle
 	w.WindowID, _ = handle.GetID()
 	w.System = core.CreateSystem(engine, func(ctx core.Context) {
-		w.Synchro.Send(func() {
-			impulsable.Impulse(ctx)
-			w.Handle.GLSwap()
-		})
+		if w.Alive {
+			w.Synchro.Send(func() {
+				impulsable.Impulse(ctx)
+				w.Handle.GLSwap()
+			})
+		}
 	}, potential, muted)
 	Windows[w.ID] = w
 
-	core.Printf(ModuleName, "fullscreen window [%d.%d] created\n", w.WindowID, w.ID)
+	core.Verbosef(ModuleName, "fullscreen window [%d.%d] created\n", w.WindowID, w.ID)
 	go w.start(impulsable)
 
 	return w
@@ -229,13 +239,26 @@ func (w *Window) start(impulsable core.Impulsable) {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	glVersion, glContext := opengl.InitializeGL(w.Handle)
+	glContext, err := w.Handle.GLCreateContext()
+	if err != nil {
+		core.Fatalf(ModuleName, "failed to create OpenGL context: %v\n", err)
+	}
+
+	sdl.GLSetSwapInterval(0)
+
+	// Initialize OpenGL
+	if err := gl.Init(); err != nil {
+		core.Fatalf(ModuleName, "failed to initialize OpenGL: %v\n", err)
+	}
+
+	glVersion := gl.GoStr(gl.GetString(gl.VERSION))
+
 	w.Context = glContext
 	defer sdl.GLDeleteContext(glContext)
 
 	core.Verbosef(ModuleName, "[%d.%d] initialized with %s\n", w.WindowID, w.ID, glVersion)
 	impulsable.Initialize()
-	for core.Alive && running && w.Alive {
+	for core.Alive && w.Alive {
 		w.Synchro.Engage()
 
 		// GL threads don't need to operate more than 1kHz
@@ -244,6 +267,6 @@ func (w *Window) start(impulsable core.Impulsable) {
 	}
 	impulsable.Cleanup()
 	delete(Windows, w.ID)
-	core.Printf(ModuleName, "window [%d.%d] cleaned up\n", w.WindowID, w.ID)
-	w.Handle.Destroy()
+	w.destroy()
+	core.Verbosef(ModuleName, "window [%d.%d] cleaned up\n", w.WindowID, w.ID)
 }

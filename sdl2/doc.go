@@ -1,4 +1,4 @@
-// Package sdl2 provides a way to create impulsable graphical contexts using SDL2
+// Package sdl2 provides a way to create impulsable openGL contexts using SDL2
 package sdl2
 
 import (
