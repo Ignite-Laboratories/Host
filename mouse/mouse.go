@@ -5,7 +5,6 @@ import (
 	"github.com/ignite-laboratories/core/std"
 	"github.com/ignite-laboratories/core/temporal"
 	"github.com/ignite-laboratories/core/when"
-	_ "github.com/ignite-laboratories/host/hydra"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
